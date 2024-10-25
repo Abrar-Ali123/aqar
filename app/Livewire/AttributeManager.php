@@ -6,6 +6,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use Astrotomic\Translatable\Validation\RuleFactory;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -22,6 +23,7 @@ class AttributeManager extends Component
     public $attributeId;
 
     public $icon;
+    public $selectedIcon;
 
     public $translations = [];
 
@@ -30,7 +32,7 @@ class AttributeManager extends Component
     public $editMode = false;
 
     protected $rules = [
-        'icon' => 'image',
+//        'icon' => 'image',
         'translations.*.name' => 'required|string',
         'translations.*.symbol' => 'nullable|string',
     ];
@@ -55,12 +57,25 @@ class AttributeManager extends Component
         ]);
     }
 
+    // This method is triggered when the 'post-created' event is fired.
+    // It listens for the event and receives the $selectedIcon value as a parameter.
+    // Once triggered, it updates the $selectedIcon property with the new value.
+    #[On('post-created')]
+    public function postAdded($selectedIcon)
+    {
+        // Set the $selectedIcon property with the value passed from the event
+        $this->selectedIcon = $selectedIcon;
+    }
+
     public function storeAttribute()
     {
 
         $attribute = new Attribute();
-        if ($this->icon) {
-            $attribute->icon = $this->icon->store('attributes/icons', 'public');
+//        if ($this->icon) {
+//            $attribute->icon = $this->icon->store('attributes/icons', 'public');
+//        }
+        if ($this->selectedIcon) {
+            $attribute->icon = $this->selectedIcon;
         }
 
         $attribute->category_id = $this->categoryId;
@@ -108,8 +123,11 @@ class AttributeManager extends Component
 
         $attribute = Attribute::find($this->attributeId);
 
-        if ($this->icon && $this->icon instanceof \Livewire\TemporaryUploadedFile) {
-            $attribute->icon = $this->icon->store('attributes/icons', 'public');
+//        if ($this->icon && $this->icon instanceof \Livewire\TemporaryUploadedFile) {
+//            $attribute->icon = $this->icon->store('attributes/icons', 'public');
+//        }
+        if ($this->selectedIcon) {
+            $attribute->icon = $this->selectedIcon;
         }
 
         $attribute->category_id = $this->categoryId;
@@ -136,9 +154,9 @@ class AttributeManager extends Component
     public function deleteAttribute($attributeId)
     {
         $attribute = Attribute::findOrFail($attributeId);
-        if ($attribute->icon) {
-            Storage::delete($attribute->icon);
-        }
+//        if ($attribute->icon) {
+//            Storage::delete($attribute->icon);
+//        }
         $attribute->delete();
         $this->attributeList = Attribute::all();
     }
