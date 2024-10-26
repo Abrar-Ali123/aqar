@@ -1,7 +1,7 @@
 @extends('components.layouts.app')
  @section('content')
-     <form action="{{ route('products.store') }}"  dir="rtl" method="POST" enctype="multipart/form-data">
-        @csrf
+ <form action="{{ route('products.store', ['facility' => $facility->id]) }}" method="POST" enctype="multipart/form-data">
+ @csrf
 
              <div class="header">بيانات المنتج الأساسية</div>
             <div class="content">

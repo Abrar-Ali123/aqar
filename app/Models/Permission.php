@@ -14,7 +14,7 @@ class Permission extends Model implements TranslatableContract
     public $translatedAttributes = ['name'];
 
     protected $fillable = [
-        'permission_id',
+        'pages',
     ];
 
     public function roles()

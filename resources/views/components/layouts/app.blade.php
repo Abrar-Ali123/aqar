@@ -38,15 +38,6 @@
 
     <div class="sidebar">
         <h2>Dashboard</h2>
-        <ul class="list-unstyled">
-        <li><a href="{{ route('categories.index') }}">تصنيفات</a></li>
-<li><a href="{{ route('upload.upload') }}">صور</a></li>
-<li><a href="{{ route('icons.index') }}">الأيقونات</a></li>
-<li><a href="{{ route('products.index') }}">المنتجات</a></li>
-
-<li><a href="{{ route('permissions.index') }}">الصلاحيات</a></li>
-<li><a href="{{ route('roles.index') }}">الأدوار</a></li>
-<li><a href="{{ route('attributes.index') }}">الخصائص</a></li>
 
         </ul>
     </div>

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -11,22 +10,12 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'email',
         'password',
         'phone_number',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
@@ -34,33 +23,26 @@ class User extends Authenticatable
         'two_factor_secret',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
-    public function facilities(): BelongsToMany
+    public function facilities()
     {
-        return $this->belongsToMany(Facility::class);
+        return $this->belongsToMany(Facility::class, 'user_facility_role')
+            ->withPivot('role_id');
     }
 
-    public function roles(): BelongsToMany
+    public function facilityRoles()
     {
-        return $this->belongsToMany(Role::class, 'user_role', 'user_id', 'role_id');
+        return $this->belongsToMany(Role::class, 'user_facility_role')
+            ->withPivot('facility_id', 'user_id'); // إضافة الحقل facility_id و user_id
     }
 
-    public function nonPrimaryRoles(): BelongsToMany
+    public function roles()
     {
-        return $this->roles()->where('is_primary', false);
-    }
-
-    public function primaryRoles(): BelongsToMany
-    {
-        return $this->roles()->where('is_primary', true);
+        return $this->belongsToMany(Role::class, 'user_facility_role')
+            ->withPivot('facility_id'); // إضافة الحقل facility_id هنا
     }
 
     public function translations()

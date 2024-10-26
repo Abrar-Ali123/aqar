@@ -9,12 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Facility extends Model implements TranslatableContract
 {
-    use HasFactory , Translatable;
+    use HasFactory, Translatable;
 
     public $translatedAttributes = ['name', 'info'];
 
     protected $fillable = [
-
         'is_active',
         'logo',
         'header',
@@ -24,23 +23,20 @@ class Facility extends Model implements TranslatableContract
         'google_maps_url',
     ];
 
-    public function users()
-    {
-        return $this->belongsToMany(User::class);
-    }
-
     public function products()
     {
         return $this->hasMany(Product::class);
     }
 
-    //    public function translations()
-    //    {
-    //        return $this->hasMany(FacilityTranslation::class);
-    //    }
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_facility_role')
+            ->withPivot('role_id'); // إضافة الحقل role_id هنا
+    }
 
-    //    public function getTranslation($locale)
-    //    {
-    //        return $this->translations->where('locale', $locale)->first();
-    //    }
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_facility_role')
+            ->withPivot('user_id'); // إضافة الحقل user_id هنا
+    }
 }

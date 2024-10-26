@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('user_facility_role', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('facility_id');
+            $table->unsignedBigInteger('facility_id'); // تأكد من أن هذا العمود موجود
             $table->unsignedBigInteger('role_id');
             $table->timestamps();
 

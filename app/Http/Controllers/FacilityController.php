@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Facility;
 use App\Models\FacilityTranslation;
 use App\Models\Permission;
-use App\Models\PermissionTranslation;
 use App\Models\Role;
 use App\Models\RoleTranslation;
 use App\Models\User;
 use App\Models\UserTranslation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -73,11 +73,11 @@ class FacilityController extends Controller
             ]);
         }
 
+        // إنشاء المستخدم الإداري
         $admin = new User;
         $admin->email = $request->email;
         $admin->phone_number = $request->phone_number;
         $admin->password = Hash::make($request->password);
-        $admin->facility_id = $facility->id;
         $admin->save();
 
         foreach ($request->input('user_translations') as $locale => $translationData) {
@@ -89,8 +89,29 @@ class FacilityController extends Controller
             ]);
         }
 
+        Auth::login($admin);
+
+        $managerPermissions = [
+            'facilities.index',
+            'facilities.edit',
+            'facilities.destroy',
+            'products.index',
+            'products.create',
+            'products.edit',
+            'products.destroy',
+            'roles.index',
+            'permissions.index',
+            'attributes.index',
+            'categories.index',
+        ];
+
+        $permission = Permission::firstOrCreate(
+            ['pages' => json_encode($managerPermissions)],
+            ['pages' => json_encode($managerPermissions)]
+        );
+
         $adminRole = Role::firstOrCreate(
-            ['facility_id' => $facility->id],
+            [],
             ['description' => 'صلاحية كاملة لإدارة المنشأة']
         );
 
@@ -108,38 +129,12 @@ class FacilityController extends Controller
             'description' => 'Full permission to manage the facility',
         ]);
 
-        $allRoutesWithFacilityId = $this->getAllRouteNames($facility->id);
+        $adminRole->permissions()->attach($permission->id);
 
-        $permissions = Permission::create([
-            'name' => 'إدارة كاملة لمنشأة '.$facility->id,
-            'pages' => json_encode($allRoutesWithFacilityId),
+        $admin->facilityRoles()->attach($facility->id, [
+            'role_id' => $adminRole->id,
             'facility_id' => $facility->id,
         ]);
-
-        $locales = ['ar', 'en'];
-        $translations = [
-            'ar' => ['name' => 'إدارة المنشأة', 'description' => 'الصلاحية لإدارة المنشأة بشكل كامل'],
-            'en' => ['name' => 'Facility Management', 'description' => 'Full permission to manage the facility'],
-        ];
-
-        foreach ($locales as $locale) {
-            $translationExists = PermissionTranslation::where('permission_id', $permissions->id)
-                ->where('locale', $locale)
-                ->exists();
-
-            if (! $translationExists) {
-                PermissionTranslation::create([
-                    'permission_id' => $permissions->id,
-                    'locale' => $locale,
-                    'name' => $translations[$locale]['name'],
-                    'description' => $translations[$locale]['description'],
-                ]);
-            }
-        }
-
-        $adminRole->permissions()->attach($permissions->id);
-
-        $admin->roles()->attach($adminRole->id);
 
         return redirect('/')->with('success', 'تم إنشاء المنشأة والمستخدم الإداري بنجاح.');
     }

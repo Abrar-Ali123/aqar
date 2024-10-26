@@ -82,19 +82,17 @@ class ProductController extends Controller
         return view('parts.product', compact('products', 'categories', 'facilities', 'attributes'));
     }
 
-    public function create(Product $product)
+    public function create($facilityId)
     {
-
+        $facility = Facility::findOrFail($facilityId);
         $categories = Category::all();
-        $facilities = Facility::all();
         $attributes = Attribute::with('translations')->get();
 
-        return view('products.create', compact('categories', 'facilities', 'attributes'));
+        return view('products.create', compact('categories', 'facility', 'attributes'));
     }
 
     public function store(Request $request)
     {
-
         $product = new Product;
         $product->is_active = $request->has('is_active');
         $product->price = $request->price;
@@ -103,7 +101,14 @@ class ProductController extends Controller
         $product->longitude = $request->longitude;
         $product->google_maps_url = $request->google_maps_url;
         $product->seller_user_id = auth()->user()->id;
-        $product->facility_id = auth()->user()->facility_id;
+
+        // تحقق من وجود facility_id
+        $facilityId = auth()->user()->facility_id;
+        if (is_null($facilityId)) {
+            return redirect()->back()->with('error', 'لا يمكن إضافة المنتج، رقم المنشأة غير موجود.');
+        }
+
+        $product->facility_id = $facilityId;
 
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('products/images', 'public');
@@ -127,16 +132,17 @@ class ProductController extends Controller
 
         $product->save();
 
+        $translations = [];
         foreach ($request->input('translations') as $locale => $translationData) {
-            $translation = new ProductTranslation([
+            $translations[] = [
                 'product_id' => $product->id,
                 'locale' => $locale,
                 'name' => $translationData['name'],
-                'description' => isset($translationData['description']) ? $translationData['description'] : '',
-            ]);
-
-            $translation->save();
+                'description' => $translationData['description'] ?? '',
+            ];
         }
+
+        ProductTranslation::insert($translations);
 
         if ($request->filled('attributes')) {
             foreach ($request->input('attributes') as $attributeId => $value) {
