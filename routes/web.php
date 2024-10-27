@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\IconController;
 use App\Http\Controllers\ProductController;
@@ -13,7 +14,9 @@ Route::get('/', function () {
 Route::get('/account', App\Livewire\AccountManagementComponent::class)->name('account.index');
 Route::get('/account', App\Livewire\AccountManagementComponent::class)->name('login');
 Route::post('/login-submit', [App\Livewire\AccountManagementComponent::class, 'loginOrRegister'])->name('login.submit');
-
+Route::post('/book-product/{product}', [BookingController::class, 'store'])->name('book.product');
+Route::post('/book-product/cash/{product}', [BookingController::class, 'store'])->name('booking.cash');
+Route::post('/book-product/bank/{product}', [BookingController::class, 'store'])->name('booking.bank');
 Route::get('/facilities/create', [FacilityController::class, 'create'])->name('facilities.create');
 Route::post('/facilities', [FacilityController::class, 'store'])->name('facilities.store');
 
@@ -22,8 +25,8 @@ Route::middleware([\App\Http\Middleware\CheckPermission::class])->prefix('/{faci
     Route::get('/edit', [FacilityController::class, 'edit'])->name('facilities.edit');
     Route::post('/{id}', [FacilityController::class, 'update'])->name('facilities.update');
     Route::delete('/', [FacilityController::class, 'destroy'])->name('facilities.destroy');
-    Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
 
+    // تعريف مسارات المنتجات
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products/create', [ProductController::class, 'store'])->name('products.store');
@@ -33,12 +36,16 @@ Route::middleware([\App\Http\Middleware\CheckPermission::class])->prefix('/{faci
     Route::get('/product/{id}', [ProductController::class, 'show'])->name('products.show');
     Route::get('/products/delete/{product}', [ProductController::class, 'delete'])->name('products.delete');
 
+    Route::get('/bookings', [BookingController::class, 'showBookings'])->name('facility.bookings');
+
+    // مسارات البحث والسمات والأدوار
     Route::get('/search/products', [ProductController::class, 'search'])->name('products.search');
-    Route::get('/attributes', AttributeManager::class)->name('attributes.index');
     Route::get('/roles', App\Livewire\RoleForm::class)->name('roles.index');
     Route::get('/permissions', App\Livewire\PermissionForm::class)->name('permissions.index');
     Route::get('/categories', App\Livewire\CategoryManager::class)->name('categories.index');
 
+    // مسارات الأيقونات والرفع
     Route::get('/icons', [IconController::class, 'index'])->name('icons.index');
     Route::get('/upload', App\Livewire\UploadImageComponent::class)->name('upload.upload');
 });
+Route::get('/attributes', AttributeManager::class)->name('attributes.index');

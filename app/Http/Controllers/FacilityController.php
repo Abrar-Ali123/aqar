@@ -73,7 +73,6 @@ class FacilityController extends Controller
             ]);
         }
 
-        // إنشاء المستخدم الإداري
         $admin = new User;
         $admin->email = $request->email;
         $admin->phone_number = $request->phone_number;
@@ -110,10 +109,16 @@ class FacilityController extends Controller
             ['pages' => json_encode($managerPermissions)]
         );
 
-        $adminRole = Role::firstOrCreate(
-            [],
-            ['description' => 'صلاحية كاملة لإدارة المنشأة']
-        );
+        $adminRole = Role::query()->whereHas('roleTranslation', function ($q) {
+            $q->where('name', 'صلاحية كاملة لإدارة المنشأة');
+        })->first();
+        if ($adminRole == null) {
+            $adminRole = Role::creacreatete(
+                [],
+                ['' => 'صلاحية كاملة لإدارة المنشأة']
+            );
+
+        }
 
         RoleTranslation::create([
             'role_id' => $adminRole->id,

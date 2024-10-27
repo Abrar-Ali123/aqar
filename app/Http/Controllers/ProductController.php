@@ -93,6 +93,9 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+
+        $facilityId = auth()->user()->facility_id;
+
         $product = new Product;
         $product->is_active = $request->has('is_active');
         $product->price = $request->price;
@@ -102,24 +105,22 @@ class ProductController extends Controller
         $product->google_maps_url = $request->google_maps_url;
         $product->seller_user_id = auth()->user()->id;
 
-        // تحقق من وجود facility_id
-        $facilityId = auth()->user()->facility_id;
-        if (is_null($facilityId)) {
-            return redirect()->back()->with('error', 'لا يمكن إضافة المنتج، رقم المنشأة غير موجود.');
-        }
+        // تعيين facility_id من المستخدم
+        $product->facility_id = auth()->user()->facility_id;
 
-        $product->facility_id = $facilityId;
-
+        // حفظ الصورة الرئيسية
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('products/images', 'public');
             $product->image = $imagePath;
         }
 
+        // حفظ الفيديو
         if ($request->hasFile('video')) {
             $videoPath = $request->file('video')->store('products/videos', 'public');
             $product->video = $videoPath;
         }
 
+        // حفظ معرض الصور
         if ($request->hasFile('image_gallery')) {
             $images = [];
             foreach ($request->file('image_gallery') as $image) {
@@ -130,20 +131,24 @@ class ProductController extends Controller
             $product->image_gallery = implode(',', $images);
         }
 
+        // حفظ المنتج
         $product->save();
 
-        $translations = [];
-        foreach ($request->input('translations') as $locale => $translationData) {
-            $translations[] = [
-                'product_id' => $product->id,
-                'locale' => $locale,
-                'name' => $translationData['name'],
-                'description' => $translationData['description'] ?? '',
-            ];
+        // حفظ الترجمات
+        if ($request->has('translations')) {
+            $translations = [];
+            foreach ($request->input('translations') as $locale => $translationData) {
+                $translations[] = [
+                    'product_id' => $product->id,
+                    'locale' => $locale,
+                    'name' => $translationData['name'],
+                    'description' => $translationData['description'] ?? '',
+                ];
+            }
+            ProductTranslation::insert($translations);
         }
 
-        ProductTranslation::insert($translations);
-
+        // حفظ السمات
         if ($request->filled('attributes')) {
             foreach ($request->input('attributes') as $attributeId => $value) {
                 $attribute = Attribute::findOrFail($attributeId);
@@ -152,7 +157,7 @@ class ProductController extends Controller
             }
         }
 
-        return redirect()->route('products.index')->with('success', 'تم إضافة المنتج بنجاح.');
+        return redirect()->route('products.index', ['facility' => $facilityId])->with('success', 'تم إضافة المنتج بنجاح.');
     }
 
     protected function processAttributeValue($attribute, $value)

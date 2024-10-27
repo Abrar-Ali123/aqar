@@ -32,7 +32,6 @@
             padding: 20px;
         }
     </style>
-    @livewireAssets
 
 </head>
 <body>

@@ -43,7 +43,7 @@ class CheckPermission
         if (! in_array($requiredPermission, $permissions)) {
             print_r($requiredPermission);
 
-            print_r($permissions);
+            //  print_r($permissions);
             //return redirect()->route('login')->with('error', 'ليس لديك الصلاحية للوصول إلى هذه الصفحة');
         }
 

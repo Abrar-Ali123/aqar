@@ -20,6 +20,10 @@ class Role extends Model implements TranslatableContract
         return $this->belongsToMany(Permission::class, 'permission_role');
     }
 
+    public function roleTranslation(){
+        return $this->hasMany(RoleTranslation::class, 'role_id')
+    }
+
     public function users()
     {
         return $this->belongsToMany(User::class, 'user_facility_role')
