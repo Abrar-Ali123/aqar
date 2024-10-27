@@ -21,7 +21,7 @@ class Role extends Model implements TranslatableContract
     }
 
     public function roleTranslation(){
-        return $this->hasMany(RoleTranslation::class, 'role_id')
+        return $this->hasMany(RoleTranslation::class, 'role_id');
     }
 
     public function users()

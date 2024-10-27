@@ -110,29 +110,35 @@ class FacilityController extends Controller
         );
 
         $adminRole = Role::query()->whereHas('roleTranslation', function ($q) {
-            $q->where('name', 'صلاحية كاملة لإدارة المنشأة');
+            $q->where('name', 'Facility Manager');
+            $q->where('is_primary', '1');
         })->first();
+
         if ($adminRole == null) {
-            $adminRole = Role::creacreatete(
-                [],
-                ['' => 'صلاحية كاملة لإدارة المنشأة']
+            $adminRole = Role::create(
+                [
+                    'is_primary' => 1
+                ]
             );
 
+            $ee = RoleTranslation::create([
+                'role_id' => $adminRole->id,
+                'locale' => 'ar',
+                'name' => 'مدير منشأة',
+                'description' => 'صلاحية كاملة لإدارة المنشأة',
+            ]);
+
+
+
+            RoleTranslation::create([
+                'role_id' => $adminRole->id,
+                'locale' => 'en',
+                'name' => 'Facility Manager',
+                'description' => 'Full permission to manage the facility',
+            ]);
+
+
         }
-
-        RoleTranslation::create([
-            'role_id' => $adminRole->id,
-            'locale' => 'ar',
-            'name' => 'مدير منشأة',
-            'description' => 'صلاحية كاملة لإدارة المنشأة',
-        ]);
-
-        RoleTranslation::create([
-            'role_id' => $adminRole->id,
-            'locale' => 'en',
-            'name' => 'Facility Manager',
-            'description' => 'Full permission to manage the facility',
-        ]);
 
         $adminRole->permissions()->attach($permission->id);
 
