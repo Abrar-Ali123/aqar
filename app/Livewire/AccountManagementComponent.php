@@ -13,6 +13,7 @@ use Livewire\WithFileUploads;
 class AccountManagementComponent extends Component
 {
     // protected $listeners = ['verificationSuccess' => 'loginOrRegister'];
+    protected $firebaseAuth;
 
     use WithFileUploads;
 
@@ -91,6 +92,9 @@ class AccountManagementComponent extends Component
     public function mount()
     {
         $this->roles = Role::where('is_primary', true)->get();
+
+        $this->firebaseAuth = (new Factory)->withServiceAccount(config('firebase.credentials_path'))->createAuth();
+
     }
 
     protected function rules()
@@ -98,12 +102,10 @@ class AccountManagementComponent extends Component
         $rules = [
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
-            // قواعد التحقق الأساسية...
         ];
 
-        // إضافة قواعد للأسماء بناءً على اللغات المتاحة
         foreach ($this->locales as $locale => $label) {
-            $rules["names.$locale"] = 'required|string|max:255'; // مثال لقاعدة التحقق
+            $rules["names.$locale"] = 'required|string|max:255';
 
         }
 
@@ -112,19 +114,20 @@ class AccountManagementComponent extends Component
 
     public function render()
     {
-        return view('livewire.account-management-component');
+        return view('livewire.account-management-component')
+            ->layout('components.layouts.blank');
     }
 
     public function codeConfirm($code)
     {
         $this->withConfirmed = $code;
-        $this->isVerified = true; // تحديث الحالة للتأكيد
+        $this->isVerified = true;
     }
 
     public function werrorCode($code)
     {
         $this->withError = $code;
-        $this->isVerified = false; // تحديث الحالة عند وجود خطأ
+        $this->isVerified = false;
     }
 
     public function loginOrRegister(Request $request)
