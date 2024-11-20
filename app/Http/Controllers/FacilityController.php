@@ -17,6 +17,13 @@ use Illuminate\Support\Facades\Storage;
 
 class FacilityController extends Controller
 {
+    public function home()
+    {
+        $facilities = Facility::all();
+
+        return view('home', compact('facilities'));
+    }
+
     public function index()
     {
         $facilities = Facility::all();
@@ -117,7 +124,7 @@ class FacilityController extends Controller
         if ($adminRole == null) {
             $adminRole = Role::create(
                 [
-                    'is_primary' => 1
+                    'is_primary' => 1,
                 ]
             );
 
@@ -128,15 +135,12 @@ class FacilityController extends Controller
                 'description' => 'صلاحية كاملة لإدارة المنشأة',
             ]);
 
-
-
             RoleTranslation::create([
                 'role_id' => $adminRole->id,
                 'locale' => 'en',
                 'name' => 'Facility Manager',
                 'description' => 'Full permission to manage the facility',
             ]);
-
 
         }
 
@@ -197,9 +201,12 @@ class FacilityController extends Controller
 
     public function show($id)
     {
-        $facility = Facility::with('translations')->findOrFail($id);
+        $facility = Facility::with('products')->findOrFail($id);
 
-        return view('facilities.show', compact('facility'));
+        return view('facilities.show', [
+            'facility' => $facility,
+            'products' => $facility->products,
+        ]);
     }
 
     public function destroy($id)

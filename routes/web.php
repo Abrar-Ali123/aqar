@@ -1,19 +1,32 @@
 <?php
 
+use App\Http\Controllers\BankController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\IconController;
+use App\Http\Controllers\LoanController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\StatusController;
 use App\Livewire\AttributeManager;
+use App\Livewire\CategoryManager;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/home', [FacilityController::class, 'home'])->name('home');
+Route::get('/facility/{facility}', [FacilityController::class, 'show'])->name('facility.show');
+
+Route::resource('banks', BankController::class);
+Route::resource('loans', LoanController::class);
+
+Route::post('/register-submit', [App\Livewire\AccountManagementComponent::class, 'register'])->name('register.submit');
 Route::get('/account', App\Livewire\AccountManagementComponent::class)->name('account.index');
 Route::get('/account', App\Livewire\AccountManagementComponent::class)->name('login');
-Route::post('/login-submit', [App\Livewire\AccountManagementComponent::class, 'loginOrRegister'])->name('login.submit');
+Route::post('/login-submit', [App\Livewire\AccountManagementComponent::class, 'login'])->name('login.submit');
+Route::post('/login-register-submit', [App\Livewire\AccountManagementComponent::class, 'loginOrRegister'])->name('login.loginOrRegister');
 Route::post('/book-product/{product}', [BookingController::class, 'store'])->name('book.product');
 Route::post('/book-product/cash/{product}', [BookingController::class, 'store'])->name('booking.cash');
 Route::post('/book-product/bank/{product}', [BookingController::class, 'store'])->name('booking.bank');
@@ -21,6 +34,10 @@ Route::get('/facilities/create', [FacilityController::class, 'create'])->name('f
 Route::post('/facilities', [FacilityController::class, 'store'])->name('facilities.store');
 
 Route::middleware([\App\Http\Middleware\CheckPermission::class])->prefix('/{facility}')->group(function () {
+    Route::resource('/projects', ProjectController::class);
+
+    Route::resource('/statuses', StatusController::class);
+
     Route::get('/index', [FacilityController::class, 'index'])->name('facilities.index');
     Route::get('/edit', [FacilityController::class, 'edit'])->name('facilities.edit');
     Route::post('/{id}', [FacilityController::class, 'update'])->name('facilities.update');
@@ -42,10 +59,13 @@ Route::middleware([\App\Http\Middleware\CheckPermission::class])->prefix('/{faci
     Route::get('/search/products', [ProductController::class, 'search'])->name('products.search');
     Route::get('/roles', App\Livewire\RoleForm::class)->name('roles.index');
     Route::get('/permissions', App\Livewire\PermissionForm::class)->name('permissions.index');
-    Route::get('/categories', App\Livewire\CategoryManager::class)->name('categories.index');
 
     // مسارات الأيقونات والرفع
     Route::get('/icons', [IconController::class, 'index'])->name('icons.index');
+    Route::get('/loans', [LoanController::class, 'facilityLoans'])->name('facility.loans.index');
+
     Route::get('/upload', App\Livewire\UploadImageComponent::class)->name('upload.upload');
 });
 Route::get('/attributes', AttributeManager::class)->name('attributes.index');
+
+Route::get('/cat', CategoryManager::class)->name('categories.index');

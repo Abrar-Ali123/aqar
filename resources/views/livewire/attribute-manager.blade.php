@@ -1,106 +1,144 @@
 <div>
-    <form wire:submit.prevent="{{ $editMode ? 'updateAttribute' : 'storeAttribute' }}">
-        <div>
-            <div>
-                <div>
-                    <label for="category_id">Category:</label>
-                    <select id="category_id" wire:model="categoryId" class="@error('categoryId') is-invalid @enderror">
-                        <option value="">Select category</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('categoryId')
-                    <span class="text-danger">{{ $message }}</span>
-                    @enderror
-                </div>
+    <h1>إدارة الخصائص</h1>
 
-                <label for="type">Type:</label>
-                <select id="type" wire:model="type" required>
-                    <option value="text">Text 🔤</option>
-                    <option value="number">Number 🔢</option>
-                    <option value="date">Date 📅</option>
-                    <option value="time">Time ⏰</option>
-                    <option value="email">Email ✉️</option>
-                    <option value="password">Password 🔒</option>
-                    <option value="file">File 📁</option>
-                    <option value="image">Image 🖼️</option>
-                    <option value="select">Select ▼</option>
-                    <option value="checkbox">Checkbox ☑️</option>
-                    <option value="radio">Radio ◉</option>
-                    <option value="url">URL 🔗</option>
-                    <option value="color">Color 🎨</option>
-                    <option value="tel">Telephone ☎️</option>
-                    <option value="range">Range 🎚️</option>
-                    <option value="datetime-local">Datetime Local 📅</option>
-                    <option value="month">Month 📅</option>
-                    <option value="week">Week 📅</option>
-                    <option value="textarea">Textarea 📝</option>
-                    <option value="switch">Switch 🔄</option>
-                    <!-- يمكنك إضافة المزيد من الخيارات هنا حسب الحاجة -->
-                </select>
-                @error('type') <span class="error">{{ $message }}</span> @enderror
+    <!-- حقل البحث عن الأيقونات -->
+    <input type="text" id="icon-search" placeholder="ابحث عن أيقونة..." oninput="resetSearchAndSearchIcons()">
 
-                <div>
-                    <label for="required">Required:</label>
-                    <input type="checkbox" id="required" wire:model="required">
-                    @error('required') <span class="error">{{ $message }}</span> @enderror
-                </div>
-            </div>
+    <!-- قائمة الأيقونات -->
+    <div id="icon-list" style="display: flex; flex-wrap: wrap; gap: 10px; max-height: 500px; overflow-y: auto;">
+        <!-- سيتم تعبئة الأيقونات هنا باستخدام JavaScript -->
+    </div>
 
-            <label for="icon">Icon:</label>
+    <!-- رسالة عند عدم العثور على نتائج -->
+    <div id="no-results" style="color: red; display: none;">لم يتم العثور على نتائج للأيقونات.</div>
 
-            <livewire:icon-selector/>
+    <!-- عرض الأيقونة المختارة -->
+    <div style="margin-top: 20px;">
+        <h3>الأيقونة المختارة:</h3>
+        <span id="selected-icon-display">
+            @if ($selectedIcon)
+                <i class="iconify" data-icon="{{ $selectedIcon }}"></i> <span>{{ $selectedIcon }}</span>
+            @else
+                <p>لم يتم اختيار أيقونة بعد.</p>
+            @endif
+        </span>
+    </div>
 
-{{--            <input type="file" id="icon" wire:model="icon">--}}
-{{--            @error('icon') <span class="error">{{ $message }}</span> @enderror--}}
-{{--            @if ($icon)--}}
-{{--                <img src="{{ $icon->temporaryUrl() }}" width="50">--}}
-{{--            @endif--}}
+    <!-- تضمين مكتبة Iconify -->
+    <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
 
-            @foreach (config('app.locales') as $locale)
-                <div>
-                    <label for="name_{{ $locale }}">Name ({{ strtoupper($locale) }}):</label>
-                    <input type="text" id="name_{{ $locale }}" wire:model="translations.{{ $locale }}.name" required>
-                    @error('translations.' . $locale . '.name') <span class="error">{{ $message }}</span> @enderror
+    <script>
+        // متغيرات للتحكم بالبحث
+        let searchTerm = '';
+        let allIcons = [];  // قائمة تجمع الأيقونات من كل المكتبات
 
-                    <label for="symbol_{{ $locale }}">Symbol ({{ strtoupper($locale) }}):</label>
-                    <input type="text" id="symbol_{{ $locale }}" wire:model="translations.{{ $locale }}.symbol">
-                    @error('translations.' . $locale . '.symbol') <span class="error">{{ $message }}</span> @enderror
-                </div>
-            @endforeach
+        // دالة لإعادة تعيين البحث
+        function resetSearchAndSearchIcons() {
+            searchTerm = document.getElementById("icon-search").value.toLowerCase();
+            searchIcons();
+        }
 
-            <button type="submit">{{ $editMode ? 'Update Attribute' : 'Save Attribute' }}</button>
-    </form>
+        // دالة البحث عن الأيقونات عبر Iconify
+        async function searchIcons() {
+            const iconList = document.getElementById("icon-list");
+            iconList.innerHTML = '';
+            document.getElementById("no-results").style.display = 'none';  // إخفاء رسالة "عدم العثور"
 
-    <hr>
+            // إذا كان مصطلح البحث فارغًا، لا نقوم بعمل استعلام
+            if (!searchTerm) return;
 
-    <h2>Attributes List</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>Name</th>
-            <th>Symbol</th>
-            <th>Icon</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach ($attributeList as $attribute)
-            <tr>
-                <td>{{ $attribute->name }}</td>
-                <td>{{ $attribute->symbol }}</td>
-                <td>
-                    @if ($attribute->icon)
-                        <img src="{{ Storage::url($attribute->icon) }}" width="50">
-                    @endif
-                </td>
-                <td>
-                    <button wire:click="editAttribute({{ $attribute->id }})">Edit</button>
-                    <button wire:click="deleteAttribute({{ $attribute->id }})">Delete</button>
-                </td>
-            </tr>
-        @endforeach
-        </tbody>
-    </table>
+            // جلب الأيقونات من Iconify
+            await fetchIconifyIcons();
+
+            // عرض الأيقونات المحملة
+            displayIcons();
+        }
+
+        // دالة لعرض الأيقونات المحملة
+        function displayIcons() {
+            const iconList = document.getElementById("icon-list");
+            iconList.innerHTML = ''; // إعادة تعيين القائمة
+
+            if (allIcons.length === 0) {
+                // إذا لم يتم العثور على أيقونات، إظهار رسالة
+                document.getElementById("no-results").style.display = 'block';
+                return;
+            }
+
+            // إخفاء رسالة "لم يتم العثور على نتائج"
+            document.getElementById("no-results").style.display = 'none';
+
+            allIcons.forEach(icon => {
+                const iconElement = document.createElement("div");
+                iconElement.style.cursor = "pointer";
+                iconElement.style.padding = "10px";
+                iconElement.style.fontSize = "24px";
+                iconElement.innerHTML = icon.html;
+                iconElement.onclick = () => selectIcon(icon.name);
+                iconList.appendChild(iconElement);
+            });
+
+            // التحقق من تحميل Iconify وتحديث الأيقونات
+            if (window.Iconify) {
+                Iconify.scan(iconList);
+            } else {
+                console.error("Iconify لم يتم تحميل مكتبة");
+            }
+        }
+
+        // جلب الأيقونات من Iconify لكل المكتبات
+        async function fetchIconifyIcons() {
+            const collections = [
+                "fa", "mdi", "bi", "fe", "ion", "jam", "ant-design", "heroicons", "octicon", "ri",
+                "bx", "simple-icons", "typcn", "wi", "zondicons", "gridicons", "vaadin", "css-gg",
+                "tabler", "ph"
+            ];
+
+            allIcons = [];  // إعادة تعيين قائمة الأيقونات
+
+            // جلب الأيقونات من كل مكتبة
+            for (const collection of collections) {
+                try {
+                    const response = await fetch(`https://api.iconify.design/search?query=${encodeURIComponent(searchTerm)}&collection=${collection}&limit=10`);
+
+                    if (!response.ok) {
+                        console.error(`Failed to fetch from ${collection}. Status: ${response.status}`);
+                        continue;
+                    }
+
+                    const data = await response.json();
+                    console.log(`Results from ${collection}:`, data);  // عرض نتائج كل مكتبة في الـ Console
+
+                    if (data.icons) {
+                        data.icons.forEach(icon => {
+                            const iconName = `${collection}:${icon}`;
+                            allIcons.push({
+                                name: iconName,
+                                html: `<span class="iconify" data-icon="${iconName}" data-inline="false"></span>`
+                            });
+                        });
+                    } else {
+                        console.log(`No icons found in ${collection} for "${searchTerm}"`);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching icons from ${collection}:`, error);
+                    alert(`Error fetching icons from ${collection}: ${error.message}`);
+                }
+            }
+
+            if (allIcons.length === 0) {
+                console.log("لم يتم العثور على أيقونات في أي من المكتبات.");
+                alert("لم يتم العثور على أيقونات.");
+            } else {
+                console.log(`تم العثور على ${allIcons.length} أيقونة.`);
+                alert(`تم العثور على ${allIcons.length} أيقونة.`);
+            }
+        }
+
+        // دالة لاختيار الأيقونة
+        function selectIcon(icon) {
+            @this.call('selectIcon', icon);  // الاتصال بـ Livewire لتحديث الأيقونة المختارة
+            document.getElementById("selected-icon-display").innerHTML = `<span class="iconify" data-icon="${icon}" data-inline="false"></span> ${icon}`;
+        }
+    </script>
 </div>

@@ -1,251 +1,195 @@
-<div class="row justify-content-center h-100 align-items-center">
-                <div class="col-md-6">
-                    <div class="authincation-content">
-                        <div class="row no-gutters">
-                            <div class="col-xl-12">
-                                <div class="auth-form">
-									<div class="text-center mb-3">
-										<a href="index.html"><img  class="logo-light" src="images/logo-full.png" alt=""></a>
-										<a href="index.html"><img  class="logo-dark" src="images/logo-white-full.png" alt=""></a>
-									</div>
-                                    <h4 class="text-center mb-4">Sign in your account</h4>
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
+<div>
 
-                                    {{ $step }}
-    @if (!$isVerified)
-        <form id="loginForm" wire:ignore>
+        <form id="loginForm" method="POST" action="{{ route('login.submit') }}">
 
+            <select wire:model="countryCode" id="country_code">
+                <option data-countryCode="GB" value="44">UK (+44)</option>
+                <option data-countryCode="US" value="1">USA (+1)</option>
+                <option data-countryCode="SA" value="966" Selected>Saudi Arabia (+966)</option>
+                <!-- باقي الخيارات هنا -->
+            </select>
 
-
-                                        @csrf
-
-<select wire:model="countryCode" id="country_code">
-    <option data-countryCode="GB" value="44">UK (+44)</option>
-    <option data-countryCode="US" value="1">USA (+1)</option>
-    <option data-countryCode="SA" value="966" Selected>Saudi Arabia (+966)</option>
-
-    <optgroup label="Other countries">
-
-    </optgroup>
-</select>
-                                        <div class="mb-3">
-                                            <label class="mb-1"><strong> </strong></label>
-
-                                            <input type="text" id="numbers" class="form-control" wire:model="phone_number" placeholder="رقم الهاتف">
-
-             @error('phone_number')
+            <input type="text" id="numbers" wire:model="phone_number" placeholder="Phone Number">
+            @error('phone_number')
             <span>{{ $message }}</span>
             @enderror
-                                        </div>
 
-
-										<div class="mb-3 position-relative">
-
-                                            <label class="mb-1"><strong></strong></label>
-
-
-											<input type="text" id="verificationCode" class="form-control" wire:model="verificationCode"  placeholder="رمز التحقق ">
-
+            <input type="text" id="verificationCode" wire:model="verificationCode" placeholder="Verification Code">
             @error('verificationCode')
             <span>{{ $message }}</span>
             @enderror
-            <br>
 
-            <div class="text-center">
-                                            <button type="submit" onclick="sendCode()" class="btn btn-primary btn-block">  ارسال رمز التحقق</button>
-                                        </div>
-<br>
-                                        <div class="text-center">
-                                            <button type="submit"  class="btn btn-primary btn-block">   تحقق  </button>
-                                        </div>
- 											<span class="show-pass eye">
+            <button type="button" onclick="sendCode()">إرسال رمز التحقق</button>
+            <button type="submit">تحقق</button>
+        </form>
 
-												<i class="fa fa-eye-slash"></i>
-												<i class="fa fa-eye"></i>
-
-											</span>
-                                        </div>
-
-                                    </form>
-                                    <div id="sentMessage"></div>
+        <div id="sentMessage"></div>
         <div id="sentError"></div>
+
         @if ($withConfirmed != false)
-            <div id="sentMessage">
-                {{ $withConfirmed }}
-            </div>
+            <div id="sentMessage">{{ $withConfirmed }}</div>
         @endif
         @if ($withError != false)
-            <div id="error">
-                {{ $withError }}
-            </div>
+            <div id="error">{{ $withError }}</div>
         @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
+        <div id="registerForm" style="display: none;">
+    <form id="nameForm" method="POST">
+        <label>أدخل اسمك بلغات مختلفة:</label>
+        @foreach (config('app.locales') as $locale)
+    <div>
+        <label for="name_{{ $locale }}">Name ({{ $locale }}):</label>
+        <input type="text" class="user_names" id="name_{{ $locale }}" data-locale="{{ $locale }}" wire:model="translations.{{ $locale }}" required>
+        @error('translations.' . $locale) <span class="error">{{ $message }}</span> @enderror
+    </div>
+@endforeach
+
+        <button type="button" onclick="submitName()">إرسال</button>
+    </form>
+</div>
 
 
 
-
-
-
-        <form id="registerForm" style="display:none">
-
-            register form
-        </form>
         <div id="recaptcha-container"></div>
-    @else
-        @if ($step === 1)
-             <form wire:submit.prevent="validateStep1" wire:key="step1">
 
 
-                <input type="text" wire:model="email" placeholder="Email">
-                @error('email')
-                <span>{{ $message }}</span>
-                @enderror
 
-                <input type="password" wire:model="password" placeholder="Password">
-                @error('password')
-                <span>{{ $message }}</span>
-                @enderror
 
-                <!-- زر "التالي" للانتقال للخطوة التالية -->
-                <button type="button" wire:click="nextStep">Next</button>
-            </form>
-        @elseif ($step === 2)
-            <!-- خطوة 2: مجموعة حقول لمعلومات الاتصال -->
-            <form wire:submit.prevent="validateStep2" wire:key="step2">
-                <input type="text" wire:model="phone_number" placeholder="Phone Number">
-                @error('phone_number')
-                <span>{{ $message }}</span>
-                @enderror
-
-                <input type="text" wire:model="verificationCode" placeholder="Verification Code">
-                @error('verificationCode')
-                <span>{{ $message }}</span>
-                @enderror
-
-                <!-- زر "التالي" للانتقال للخطوة التالية أو "الرجوع" للعودة للخطوة السابقة -->
-                <button type="button" wire:click="prevStep">Back</button>
-                <button type="button" wire:click="nextStep">Next</button>
-            </form>
-        @elseif ($step === 3)
-            <!-- خطوة 3: مجموعة حقول للمعلومات الإضافية -->
-            <form wire:submit.prevent="registerUser" wire:key="step3">
-                <!-- حقول المعلومات الإضافية -->
-                <input type="text" wire:model="avatar" placeholder="Avatar">
-                @error('avatar')
-                <span>{{ $message }}</span>
-                @enderror
-
-                <input type="text" wire:model="bank_account" placeholder="Bank Account">
-                @error('bank_account')
-                <span>{{ $message }}</span>
-                @enderror
-
-                <!-- وهكذا، قم بإضافة جميع الحقول الموجودة في دالة loginOrRegister -->
-
-                <!-- زر "التالي" لإرسال النموذج -->
-                <button type="button" wire:click="prevStep">Back</button>
-                <button type="submit">Submit</button>
-            </form>
-        @endif
-    @endif
-
-    <script src="{{ asset('livewire/livewire.js') }}"></script> <!-- تأكد من أن المسار صحيح -->
-
+    <script src="{{ asset('livewire/livewire.js') }}"></script>
     <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD5QbmwuyyM9ySCMiwFZ4haK1uRFniXUrY",
-            authDomain: "real-estate-80e99.firebaseapp.com",
-            projectId: "real-estate-80e99",
-            storageBucket: "real-estate-80e99.appspot.com",
-            messagingSenderId: "635269315499",
-            appId: "1:635269315499:web:6c326defae137947d0f0ee",
-            measurementId: "G-ZKJQVWNFPH"
-        };
+    // إعدادات Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyD5QbmwuyyM9ySCMiwFZ4haK1uRFniXUrY",
+        authDomain: "real-estate-80e99.firebaseapp.com",
+        projectId: "real-estate-80e99",
+        storageBucket: "real-estate-80e99.appspot.com",
+        messagingSenderId: "635269315499",
+        appId: "1:635269315499:web:6c326defae137947d0f0ee",
+        measurementId: "G-ZKJQVWNFPH"
+    };
 
-        firebase.initializeApp(firebaseConfig);
-    </script>
-    <script type="text/javascript">
-        window.onload = function () {
-            render();
-        }
+    // تهيئة Firebase
+    firebase.initializeApp(firebaseConfig);
 
-        function render() {
-            this.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
-            recaptchaVerifier.render();
-        }
+    // تهيئة reCAPTCHA عند تحميل الصفحة
+    window.onload = function () {
+        initializeRecaptcha();
+    };
 
-        function sendCode() {
-            var countryCode = $('#country_code').val(); // الحصول على رمز الدولة المحدد
-            var phoneNumber = $('#numbers').val(); // الحصول على رقم الهاتف
+    function initializeRecaptcha() {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
+        recaptchaVerifier.render();
+    }
 
-            // دمج رمز الدولة مع رقم الهاتف
-            var number = '+' + countryCode + phoneNumber;
-            console.log(number);
+    // دالة إرسال رمز التحقق
+    function sendCode() {
+        const countryCode = $('#country_code').val();
+        const phoneNumber = $('#numbers').val();
+        const fullNumber = `+${countryCode}${phoneNumber}`;
 
-            // استخدام رقم الهاتف المدمج لإرسال رمز التحقق
-            firebase.auth().signInWithPhoneNumber(number, window.recaptchaVerifier).then(function (confirmationResult) {
+        firebase.auth().signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
+            .then(function (confirmationResult) {
                 window.confirmationResult = confirmationResult;
-                coderesult = confirmationResult;
-                $('#sentMessage').text('Code sent successfully');
-                $('#sentMessage').show();
-            }).catch(function (error) {
-                $('#sentError').text(error.message);
-                $('#sentError').show();
+                $('#sentMessage').text('Code sent successfully').show();
+            })
+            .catch(function (error) {
+                $('#sentError').text(error.message).show();
             });
+    }
+
+    // إعداد ترويسة CSRF لـ Ajax
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         }
+    });
 
-        $("#loginForm").on("submit", function (e) {
-            e.preventDefault();
-            var code = document.getElementById('verificationCode').value;
+     $("#loginForm").on("submit", function (e) {
+        e.preventDefault();
+        const code = $('#verificationCode').val();
 
-            coderesult.confirm(code).then(function (result) {
-                var user = result.user;
-                $('#sentMessage').hide();
-                $('#sentError').hide();
+         if (window.confirmationResult) {
+            window.confirmationResult.confirm(code)
+                .then(function (result) {
+                    $('#sentMessage').hide();
+                    $('#sentError').hide();
 
-
-                const idToken = await user.getIdToken();
-
-                // إرسال رمز التحقق إلى الخادم
-                $.ajax({
-                    url: "{{ route('login.submit') }}",
-                    method: "POST",
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    data: {
-                        phone_number: $('#numbers').val(),
-                        countryCode: $('#country_code').val(),
-                        verificationCode: code,
-                        idToken: idToken
-                    },
-                    success: function (res) {
-                        if (res.status === 'done') {
-                            window.location.href = "/dashboard";
-                        } else if (res.status === 'register') {
-                            $("#loginForm").hide();
-                            $("#registerForm").show();
-                        } else {
-                            $('#sentError').text(res.message);
-                            $('#sentError').show();
+                     $.ajax({
+                        url: "{{ route('login.submit') }}",
+                        method: "POST",
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        data: {
+                            phone_number: $('#numbers').val(),
+                            countryCode: $('#country_code').val(),
+                            verificationCode: code
+                        },
+                        success: function (res) {
+                            if (res.status === 'done') {
+                                window.location.href = "/dashboard";
+                            } else if (res.status === 'register') {
+                                $("#loginForm").hide();
+                                $("#registerForm").show();
+                            } else {
+                                $('#sentError').text(res.message).show();
+                            }
+                        },
+                        error: function (xhr) {
+                            $('#sentError').text("An error occurred: " + xhr.responseText).show();
                         }
-                    }
+                    });
+                })
+                .catch(function (error) {
+                    $('#sentError').text(error.message).show();
                 });
-            }).catch(function (error) {
-                $('#sentError').text(error.message);
-                $('#sentError').show();
-            });
-        });
+        } else {
+            $('#sentError').text("Please send the verification code first.").show();
+        }
+    });
 
 
-    </script>
+    function submitName() {
+    // إنشاء كائن `names` بحيث يحتوي على كل لغة (locale) مع النص المدخل
+    let names = {};
+    $('.user_names').each(function() {
+        let locale = $(this).data('locale'); // الحصول على اللغة من `data-locale`
+        let name = $(this).val(); // الحصول على النص المدخل
+        names[locale] = name; // إضافة اللغة والنص المدخل كزوج key-value
+    });
+
+    $.ajax({
+        url: "{{ route('login.loginOrRegister') }}",
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Content-Type': 'application/json' // تعيين نوع المحتوى إلى JSON
+        },
+        data: JSON.stringify({
+            phone_number: $('#numbers').val(),
+            countryCode: $('#country_code').val(),
+            names: names // إرسال names ككائن {locale: name, ...}
+        }),
+        success: function (res) {
+            if (res.status === 'registered') {
+                window.location.href = "/dashboard";
+            }
+        },
+        error: function (xhr) {
+            $('#sentError').text("حدث خطأ: " + xhr.responseText).show();
+        }
+    });
+}
+
+
+</script>
+
+
     @if (session()->has('message'))
         <div>{{ session('message') }}</div>
     @endif
@@ -256,12 +200,3 @@
         <div>{{ session('success') }}</div>
     @endif
 </div>
-
-
-</div>
-
-
-
-
-
-

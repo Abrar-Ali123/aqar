@@ -39,4 +39,9 @@ class Facility extends Model implements TranslatableContract
         return $this->belongsToMany(Role::class, 'user_facility_role')
             ->withPivot('user_id'); // إضافة الحقل user_id هنا
     }
+
+    public function statuses()
+    {
+        return $this->morphMany(Status::class, 'statusable');
+    }
 }

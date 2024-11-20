@@ -2,17 +2,14 @@
 
 namespace App\Livewire;
 
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 class AccountManagementComponent extends Component
 {
-    // protected $listeners = ['verificationSuccess' => 'loginOrRegister'];
     protected $firebaseAuth;
 
     use WithFileUploads;
@@ -87,15 +84,11 @@ class AccountManagementComponent extends Component
 
     public $withError = false;
 
+    public $registrationType;
+
+    public $translations = [];
+
     protected $listeners = ['codeConfirm', 'werrorCode'];
-
-    public function mount()
-    {
-        $this->roles = Role::where('is_primary', true)->get();
-
-        $this->firebaseAuth = (new Factory)->withServiceAccount(config('firebase.credentials_path'))->createAuth();
-
-    }
 
     protected function rules()
     {
@@ -106,7 +99,6 @@ class AccountManagementComponent extends Component
 
         foreach ($this->locales as $locale => $label) {
             $rules["names.$locale"] = 'required|string|max:255';
-
         }
 
         return $rules;
@@ -130,97 +122,58 @@ class AccountManagementComponent extends Component
         $this->isVerified = false;
     }
 
-    public function loginOrRegister(Request $request)
+    public function login(Request $request)
     {
-        // فرض تحقق الرمز هنا إذا كنت تحتاج ذلك
-        // التحقق من الرمز الوارد من Firebase
-        // if ($request->verificationCode !== 'التحقق من الرمز هنا') {
-        //     return response()->json(['status' => 'error', 'message' => 'رمز التحقق غير صحيح.']);
-        // }
+        $idToken = $request->input('idToken');
+        $phoneNumber = $request->input('phone_number');
 
-        $phone_number = "+{$request->countryCode}{$request->phone_number}";
+        $phone_number = "+{$request->countryCode}{$phoneNumber}";
         $user = User::where('phone_number', $phone_number)->first();
 
         if ($user) {
-            // إذا كان المستخدم موجودًا بالفعل، قم بتسجيل دخوله
             Auth::login($user);
 
             return response()->json(['status' => 'done']);
         } else {
-            // إذا لم يكن المستخدم موجودًا، توجيهه لعملية التسجيل
+
             return response()->json(['status' => 'register']);
+
         }
+
     }
 
-    public function login()
+    public function loginOrRegister(Request $request)
     {
-        $phone_number = "+$this->countryCode$this->phone_number";
+        $idToken = $request->input('idToken');
+        $phoneNumber = $request->input('phone_number');
 
+        $phone_number = "+{$request->countryCode}{$phoneNumber}";
         $user = User::where('phone_number', $phone_number)->first();
+
         if ($user) {
-
-            // إذا كان المستخدم مسجل بالفعل، قم بتسجيل دخوله
             Auth::login($user);
-            session()->flash('message', 'You are logged in successfully.');
 
-            return response()->json('done');
+            return response()->json(['status' => 'done']);
         } else {
-            return response()->json(false);
-
-            //             إذا لم يكن المستخدم مسجل بالفعل، قم بعملية التسجيل
             $user = User::create([
-                'name' => null,
-                'email' => $this->email,
-                'password' => Hash::make($this->password),
                 'phone_number' => $phone_number,
-                'bank_account' => $this->bank_account,
-                'role_id' => $this->role_id,
-                'facility_id' => $this->facility_id,
-                'bank_id' => $this->bank_id,
-                'latitude' => $this->latitude,
-                'longitude' => $this->longitude,
-                'google_maps_url' => $this->google_maps_url,
-                'primary_role' => $this->primary_role,
-                'facebook' => $this->facebook,
-                'twitter' => $this->twitter,
-                'instagram' => $this->instagram,
-                'linkedin' => $this->linkedin,
-                'snapchat' => $this->snapchat,
-                'tiktok' => $this->tiktok,
-                'pinterest' => $this->pinterest,
-                'youtube' => $this->youtube,
-                'whatsapp' => $this->whatsapp_number,
-                'telegram' => $this->telegram,
-                'role_id' => $this->selectedRoleId,
+                'primary_role' => 'باحث عن عقار',
+
             ]);
 
-            if ($this->avatar) {
-                $user->avatar = $this->avatar->store('avatars', 'public');
+            foreach ($request->names as $locale => $name) {
+                $user->translations()->updateOrCreate(
+                    ['locale' => $locale],
+                    ['name' => $name]
+                );
             }
 
-            foreach ($this->names as $locale => $name) {
-                UserTranslation::create([
-                    'user_id' => $user->id,
-                    'locale' => $locale,
-                    'name' => $name,
-                    'info' => $this->addresses[$locale] ?? '',
-                ]);
-            }
-            // تحقق مما إذا كان الدور مدفوعًا وتوجيه لصفحة الدفع
-            $selectedRole = Role::find($this->selectedRoleId);
-            if ($selectedRole && $selectedRole->is_paid) {
-                session()->put('user_id', $user->id); // حفظ معرف المستخدم في الجلسة لاستخدامه بعد الدفع
-
-                return redirect()->to('/payment'); // توجيه المستخدم إلى صفحة الدفع
-            }
-
-            // إكمال التسجيل للأدوار المجانية
             Auth::login($user);
-            session()->flash('success', 'User registered successfully.');
 
-            return response()->json(false);
-
-            return redirect()->to('/dashboard1');
+            return response()->json([
+                'status' => 'registered',
+                'message' => 'تم تسجيلك بنجاح. يمكنك الآن إكمال ملفك الشخصي.',
+            ]);
         }
     }
 }

@@ -105,22 +105,18 @@ class ProductController extends Controller
         $product->google_maps_url = $request->google_maps_url;
         $product->seller_user_id = auth()->user()->id;
 
-        // تعيين facility_id من المستخدم
         $product->facility_id = auth()->user()->facility_id;
 
-        // حفظ الصورة الرئيسية
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('products/images', 'public');
             $product->image = $imagePath;
         }
 
-        // حفظ الفيديو
         if ($request->hasFile('video')) {
             $videoPath = $request->file('video')->store('products/videos', 'public');
             $product->video = $videoPath;
         }
 
-        // حفظ معرض الصور
         if ($request->hasFile('image_gallery')) {
             $images = [];
             foreach ($request->file('image_gallery') as $image) {
@@ -131,7 +127,6 @@ class ProductController extends Controller
             $product->image_gallery = implode(',', $images);
         }
 
-        // حفظ المنتج
         $product->save();
 
         // حفظ الترجمات

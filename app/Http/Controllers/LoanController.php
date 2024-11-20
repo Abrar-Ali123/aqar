@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bank;
+use App\Models\Facility;
 use App\Models\Loan;
 use App\Models\LoanTranslation;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ class LoanController extends Controller
 {
     public function index()
     {
-        $loans = Loan::with('bank')->get();
+        $loans = Loan::with(['bank', 'facility'])->get();
 
         return view('loans.index', compact('loans'));
     }
@@ -25,7 +26,9 @@ class LoanController extends Controller
 
     public function store(Request $request)
     {
+        // إنشاء قرض جديد وربط المنشأة والمستخدم والبيانات الأساسية
         $loan = new Loan;
+        $loan->facility_id = $request->facility_id; // تحديد المنشأة
         $loan->applicant = auth()->id();
         $loan->birth = $request->birth;
         $loan->salary = $request->salary;
@@ -33,17 +36,15 @@ class LoanController extends Controller
         $loan->military = $request->military;
         $loan->rank = $request->rank;
         $loan->employment = $request->employment;
-        $loan->agency = $request->agency;
         $loan->bank_id = $request->bank_id;
-
+        $loan->updated_by = auth()->id(); // حفظ المستخدم الذي قام بالإنشاء
         $loan->save();
 
-        $translations = [];
-
+        // حفظ الترجمة لحقل agency حسب اللغة
         if ($request->has('translations')) {
             foreach ($request->input('translations') as $locale => $translationData) {
                 $translations[] = [
-                    'bank_id' => $bank->id,
+                    'loan_id' => $loan->id,
                     'locale' => $locale,
                     'agency' => $translationData['agency'],
                 ];
@@ -58,44 +59,72 @@ class LoanController extends Controller
     public function edit($id)
     {
         $loan = Loan::findOrFail($id);
-        $banks = Bank::all();
 
-        return view('loans.edit', compact('loan', 'banks'));
+        return response()->json([
+            'id' => $loan->id,
+            'applicant' => $loan->applicant,
+            'birth' => $loan->birth,
+            'salary' => $loan->salary,
+            'commitments' => $loan->commitments,
+            'military' => $loan->military,
+            'rank' => $loan->rank,
+            'employment' => $loan->employment,
+            'bank_id' => $loan->bank_id,
+            'facility_id' => $loan->facility_id,
+            'agency' => $loan->translate(app()->getLocale())->agency ?? '',
+        ]);
     }
 
     public function update(Request $request, $id)
     {
-        $loan = Loan::findOrFail($id);
-        $loan->birth = $request->birth;
-        $loan->salary = $request->salary;
-        $loan->commitments = $request->commitments;
-        $loan->military = $request->military;
-        $loan->rank = $request->rank;
-        $loan->employment = $request->employment;
-        $loan->agency = $request->agency;
-        $loan->bank_id = $request->bank_id;
+        try {
+            $loan = Loan::findOrFail($id);
 
-        $loan->save();
+            // تحديث بيانات القرض الأساسية
+            $loan->applicant = $request->applicant;
+            $loan->birth = $request->birth;
+            $loan->salary = $request->salary;
+            $loan->commitments = $request->commitments;
+            $loan->military = $request->military;
+            $loan->rank = $request->rank;
+            $loan->employment = $request->employment;
+            $loan->bank_id = $request->bank_id;
+            $loan->facility_id = $request->facility_id; // تحديد المنشأة
+            $loan->updated_by = auth()->id(); // تحديث المستخدم الذي قام بالتعديل
+            $loan->save();
 
-        LoanTranslation::where('loan_id', $loan->id)->delete();
+            // تحديث الترجمة لحقل agency حسب اللغة الحالية فقط
+            $locale = app()->getLocale();
+            if ($request->has('agency')) {
+                $loan->translateOrNew($locale)->agency = $request->agency;
+                $loan->save();
+            }
 
-        foreach ($request->translations as $translation) {
-            LoanTranslation::create([
-                'loan_id' => $loan->id,
-                'locale' => $translation['locale'],
-                'translated_agency' => $translation['agency'] ?? null,
+            return response()->json([
+                'id' => $loan->id,
+                'agency' => $loan->translate($locale)->agency,
+                'birth' => $loan->birth,
+                'salary' => $loan->salary,
             ]);
-        }
+        } catch (\Exception $e) {
+            \Log::error('Error updating loan: '.$e->getMessage());
 
-        return redirect()->route('loans.index')->with('success', 'تم تحديث الطلب بنجاح.');
+            return response()->json(['error' => 'حدث خطأ أثناء تحديث البيانات.'], 500);
+        }
     }
 
     public function destroy($id)
     {
-        $loan = Loan::findOrFail($id);
-        $loan->delete();
-        LoanTranslation::where('loan_id', $id)->delete();
+        Loan::destroy($id);
 
-        return redirect()->route('loans.index')->with('success', 'تم حذف الطلب بنجاح.');
+        return response()->json(['status' => 'success']);
+    }
+
+    public function facilityLoans($facilityId)
+    {
+        $facility = Facility::findOrFail($facilityId);
+        $loans = Loan::where('facility_id', $facility->id)->with('bank')->get();
+
+        return view('loans.facility_loans', compact('loans', 'facility'));
     }
 }

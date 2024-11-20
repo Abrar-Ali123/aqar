@@ -1,5 +1,4 @@
-@extends('components.layouts.app')
-@section('content')
+
 <div class="container">
     <form method="POST" action="{{ route('facilities.store') }}" enctype="multipart/form-data">
         @csrf
@@ -271,4 +270,3 @@ function updateImagePreview(input, previewId) {
         <button type="submit" class="btn btn-primary">{{ __('facility.create_facility') }}</button>
 </div></div></form>
 </div>
-@endsection

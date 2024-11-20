@@ -1,4 +1,4 @@
-@extends('components.layouts.app')
+@extends('components.layouts.app1')
  @section('content')
  <form action="{{ route('products.store', ['facility' => $facility->id]) }}" method="POST" enctype="multipart/form-data">
  @csrf

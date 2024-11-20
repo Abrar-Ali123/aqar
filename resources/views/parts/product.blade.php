@@ -46,3 +46,22 @@
         @endforeach
     </div>
 </div>
+
+
+<script>
+    function toggleView() {
+        const gridView = document.getElementById('gridView');
+        const tableView = document.getElementById('tableView');
+        const toggleButton = document.getElementById('toggleViewBtn');
+
+        if (gridView.style.display === 'none') {
+            gridView.style.display = 'flex';
+            tableView.style.display = 'none';
+            toggleButton.textContent = 'عرض كجدول';
+        } else {
+            gridView.style.display = 'none';
+            tableView.style.display = 'block';
+            toggleButton.textContent = 'عرض كشبكة';
+        }
+    }
+</script>
