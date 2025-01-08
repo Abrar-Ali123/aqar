@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "real-estate-80e99",
+  "private_key_id": "c03e38eeb3ffd8c6f31ce56de767cbcf0abe2856",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCdzRs5hlBnG29K\nXE5MvwZjUvy8ZBzK2WLN/GSFGBTB2i+8l3css6hhjC+5acI6FOby/gaohywrrgj1\n7RLIeosUgex2iHFOL4Stt5EfkJbjolFUlFAYQAE3f56ysk5E7e3F9T9jCsVYMjEZ\nKpMeL3IJ2ymm3x7bXBsaTosheuNf1pk5JSE3xALaAHtnSOPc8GrctXqmjYPOwHHc\n9g9ijr5APlsLaCXN5XmTEfu41Dnbr08e/VfIkfHN55Yy4Fj52PQ+0W2ogdkMlbVw\nqEHRnmTbHFHz0J53hDQBK1yT/TT3K2FrxNLeCNhQfw0+mX97xXXzcETAXPGTG9S/\nHybvNZLlAgMBAAECggEAFJElzfzTUGj7O5wlyWtxW/M2RSCgPxEPx2ywtkch93Um\nWSR9sCoXVWV11+rwmWzdgAi7We5KQ8QqX1E/rDkKlQjtBrL4X5oiZxjglZZdEDy4\n8HbnLI31CqR7zOsf9+xx2+X/1bsS5xCdpRvPMnU5Hg8+UcVNaoZJ8wcPK7UuWvBz\nHaniJbX9rEPpsb0/NVxxaOj6FvVOlz5Sp4qOCqEC0skWUhgoM+e9xPwDyY9pI+DP\nrGiAKOWIX7YY/ePQotwY9ZSTmfCra9xQLsG2+DE6+0N4ZxdBUFlxNrkVtq7eJLxC\ncnSJoMlpQ2l+wX1DSCaP8G9ETtYWo7GmGE5GKjB1KQKBgQDYVJKEPSWZsaWVYzp3\ndLBwq2Tqyi128a/DWlec9TEkQnpJY7d4Y/fPIKQ5CVcEH32LtMtzrU+v3//R00sb\nNiiiSwrroB+bB17Dd9Q4+ULP/fmaebkfvE13PgxnGqRy9DMVMWnWEl2GPQ9lWkA5\n7B9cUCQJdvVAzyAtfM0sdwS53QKBgQC6vO/TsdbEI+T3TeH+bW4lahbvsXnBhC7T\n160fXbobUd+Eyd1W5Q5dpgHA/WvZ3A3uoCiwJfes7Ij41FqFWd8BJ3Nsp+SvbXee\nv91yK+q1Jk9UiQE8w2NYsYTzP4gC7pXej0bxN58fAveW1tqdswTEPqS0XT23tdIi\nuUEdCLRgqQKBgHwEh/Z9o4en2xh4SXVgFSKSb4lWnJfa2Hty2FVoD2MNJVPbcbv3\n+4Hn4Z29KAB6GRw1aomHau6VyO++ZQlVlBfuU3VfV58lq4L9uFFtPItGu4h+jc2O\nww5AKRYWpP4t1vcoW9dYsfsaGDBve/B42EWwv+gZJWKhG35YVLtQBAqVAoGBAILx\n4irMVhGMKg7Q6lyDV+2ciyDhjsOIcV3Tq26HRu3JZ7ex5if8zyoUMr6l9m76xDpE\nzMNYnGkCJLp4DlHcR2iDxYi34sCxPmRvnlVlPlxw1MgumlOFn7CeKuB3+GQ18Znz\nVofnvQj+B6gaWYqj8f+6/bwMdi7QrN30khhN9k6hAoGALNqdH/6bQxl+9fxshDnS\nEHJKcNtiloWmpODXcURkYarwCLVqZKtkxuWkFQ4E5YVkxkUEqIYHaBgWfe+K7j6D\n2aq2NRpLZ3VMZXkXlazlMiZ8PCdpUP1I843CzdCMuId7+RlcYnJ+tghx/9qnrcwG\nWiFIlPdx68BcoEQQ4GK8BjE=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-e275i@real-estate-80e99.iam.gserviceaccount.com",
+  "client_id": "116728346187903420822",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-e275i%40real-estate-80e99.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
