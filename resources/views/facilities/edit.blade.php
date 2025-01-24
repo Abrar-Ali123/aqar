@@ -1,248 +1,227 @@
-@extends('dashboard.layouts.app1')
+@extends('dashboard.layouts.app')
+
 @section('content')
-<div class="container">
-<form method="POST" action="{{ route('facilities.update', $facility->id) }}" enctype="multipart/form-data">
-        @csrf
+    <div class="container-fluid">
 
-        <!-- Section for Facility Fields -->
-        <h2>{{ __('facility.create_new_facility') }}</h2>
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">تحديث المنشأة</h4>
 
-        <div class="form-group">
-    <label for="is_active">{{ __('facility.is_active_now') }}: <span class="text-danger">*</span></label>
-    <input type="checkbox" class="form-control" id="is_active" name="is_active" value="1" {{ $facility->is_active ? 'checked' : '' }}>
-</div>
-
-
-<div class="form-group">
-    <label for="logo">{{ __('facility.logo') }}:</label>
-    <input type="file" class="form-control" id="logo" name="logo" onchange="updateImagePreview(this, 'logoPreview')">
-    <center>
-        <!-- تعديل مسار الصورة لعرض الصورة الحالية -->
-        <img id="logoPreview" src="{{ $facility->logo ? Storage::url($facility->logo) : '#' }}" alt="Logo Preview" style="max-width: 100%; max-height: 200px; {{ $facility->logo ? '' : 'display: none;' }}">
-    </center>
-</div>
-
-<div class="form-group">
-    <label for="header">{{ __('facility.header_image') }}:</label>
-    <input type="file" class="form-control" id="header" name="header" onchange="updateImagePreview(this, 'headerPreview')">
-    <center>
-        <!-- تعديل مسار الصورة لعرض الصورة الحالية -->
-        <img id="headerPreview" src="{{ $facility->header ? Storage::url($facility->header) : '#' }}" alt="Header Preview" style="max-width: 100%; max-height: 200px; {{ $facility->header ? '' : 'display: none;' }}">
-    </center>
-</div>
-
-<script>
-function updateImagePreview(input, previewId) {
-    if (input.files && input.files[0]) {
-        var reader = new FileReader();
-
-        reader.onload = function (e) {
-            var preview = document.getElementById(previewId);
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-        };
-
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-</script>
-
-
-<div class="form-group">
-    <label for="License">{{ __('facility.license') }}:</label>
-    <input type="text" class="form-control" id="License" name="License" value="{{ $facility->License }}" placeholder="{{ __('facility.enter_license') }}">
-</div>
-
-
-
-
-   <br>
-
- <input id="autocomplete" class="fas fa-search" placeholder="ادخل موقعك" type="text" style="width: 70%;" />
- <br>
- {{-- ... جزء من النموذج ... --}}
-
-<!-- حقول خريطة جوجل -->
-<div class="form-group">
-    <label for="latitude">{{ __('facility.latitude') }}:</label>
-    <input type="text" value="{{$facility->latitude}}" class="form-control" id="latitude" name="latitude" value="{{ $facility->latitude }}" placeholder="{{ __('facility.enter_latitude') }}">
-</div>
-
-<div class="form-group">
-    <label for="longitude">{{ __('facility.longitude') }}:</label>
-    <input type="text" class="form-control" value="{{$facility->longitude}}" id="longitude" name="longitude" value="{{ $facility->longitude }}" placeholder="{{ __('facility.enter_longitude') }}">
-</div>
-
-<div class="form-group">
-    <label for="google_maps_url">{{ __('facility.google_maps_url') }}:</label>
-    <input type="text" class="form-control" id="google_maps_url" value="{{ $facility->google_maps_url }}" name="google_maps_url" value="{{ $facility->google_maps_url }}" placeholder="{{ __('facility.enter_google_maps_url') }}">
-</div>
-
-
-  <div id="map" style="height:400px;"></div>
-
-
-
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCXV38aeBDnAiNzIsI97wtDRLapY4vc1Ds&libraries=places&callback=initAutocomplete" async defer></script>
-  <script>
-  var autocomplete, map, marker;
-
-  function initAutocomplete() {
-    // إنشاء خريطة Google
-    map = new google.maps.Map(document.getElementById('map'), {
-      center: {lat: -34.397, lng: 150.644}, // يمكنك تغيير هذه الإحداثيات
-      zoom: 13
-    });
-
-    // إنشاء كائن البحث التلقائي وربطه بحقل الإدخال
-    autocomplete = new google.maps.places.Autocomplete(
-        document.getElementById('autocomplete'),
-        {types: ['geocode']}
-    );
-
-     autocomplete.bindTo('bounds', map);
-
-     marker = new google.maps.Marker({
-      map: map,
-      draggable: true, // جعل الماركر قابل للسحب
-      position: map.getCenter() // تعيين موقع الماركر ليكون في مركز الخريطة
-    });
-
-    // مستمع لحدث السحب للماركر
-    marker.addListener('dragend', function(event) {
-      updateLocation(event.latLng.lat(), event.latLng.lng());
-    });
-
-    // مستمع لحدث النقر على الخريطة
-    map.addListener('click', function(event) {
-      marker.setPosition(event.latLng);
-      updateLocation(event.latLng.lat(), event.latLng.lng());
-    });
-
-    // مستمع لحدث تغيير مكان البحث
-    autocomplete.addListener('place_changed', function() {
-      var place = autocomplete.getPlace();
-      if (!place.geometry) {
-        window.alert("No details available for input: '" + place.name + "'");
-        return;
-      }
-
-      // تعيين موقع الماركر والخريطة بناءً على البحث
-      marker.setPosition(place.geometry.location);
-      marker.setVisible(true);
-      map.setCenter(place.geometry.location);
-      map.setZoom(17);
-
-      updateLocation(place.geometry.location.lat(), place.geometry.location.lng());
-    });
-  }
-
-  // تحديث حقول الإحداثيات ورابط الخريطة بناءً على الموقع الجديد
-  function updateLocation(lat, lng) {
-    document.getElementById('latitude').value = lat;
-    document.getElementById('longitude').value = lng;
-    document.getElementById('google_maps_url').value = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(lat + ',' + lng);
-  }
-</script>
-
-
-
-
-
-
-        <!-- Section for Facility Translations -->
-        @foreach (config('app.locales') as $locale)
-            <div class="form-group">
-                <label for="name_{{ $locale }}">{{ __('facility.name') }}: <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="name_{{ $locale }}" value="{{$facility->name}}" name="translations[{{ $locale }}][name]" placeholder="{{ __('facility.enter_name', ['locale' => strtoupper($locale)]) }}" required>
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="#">المنشآت</a></li>
+                            <li class="breadcrumb-item active">تحديث المنشأة</li>
+                        </ol>
+                    </div>
+                </div>
             </div>
+        </div>
 
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title mb-0">تفاصيل المنشأة</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ route('facilities.update', $facility->id) }}" enctype="multipart/form-data">
+                            @csrf
+                            @method('PUT')
+                            <div class="row gy-4">
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="is_active" class="form-label">هل المنشأة نشطة الآن؟ <span
+                                                class="text-danger">*</span></label>
+                                        <select class="form-control" id="is_active" name="is_active" required>
+                                            <option value="1" {{ $facility->is_active == 1 ? 'selected' : '' }}>نعم</option>
+                                            <option value="0" {{ $facility->is_active == 0 ? 'selected' : '' }}>لا</option>
+                                        </select>
+                                    </div>
+                                </div>
 
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="logo" class="form-label">الشعار</label>
+                                        <input type="file" name="logo" class="form-control" id="logo" accept="image/*">
+                                        @error('logo')
+                                            <p class="text-danger mt-2">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
 
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="header" class="form-label">صورة الرأس</label>
+                                        <input type="file" name="header" class="form-control" id="header" accept="image/*">
+                                        @error('header')
+                                            <p class="text-danger mt-2">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
 
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="License" class="form-label">الرخصة</label>
+                                        <input type="text" name="License" class="form-control" id="License"
+                                            placeholder="أدخل الرخصة" value="{{ $facility->License }}">
+                                    </div>
+                                </div>
 
+                                <div class="col-md-12">
+                                    <div>
+                                        <label for="autocomplete" class="form-label">الموقع</label>
+                                        <input type="text" name="location" id="autocomplete" class="form-control mb-3"
+                                            placeholder="أدخل الموقع" value="{{ $facility->location }}">
+                                        <input class="form-control mb-3" type="text" id="latitude" name="latitude"
+                                            placeholder="خط العرض" value="{{ $facility->latitude }}">
+                                        <input class="form-control mb-3" type="text" id="longitude" name="longitude"
+                                            placeholder="خط الطول" value="{{ $facility->longitude }}">
+                                        <input class="form-control mb-3" type="text" id="google_maps_url"
+                                            name="google_maps_url" placeholder="عنوان الخريطة" value="{{ $facility->google_maps_url }}">
 
- <!-- Rich Text Editor Container -->
-<div class="form-group">
-  <!-- Rich Text Tools -->
-  <div id="editor-toolbar" class="editor-toolbar">
-  <div id="editor-toolbar" class="editor-toolbar" style="margin-bottom: 10px;"> <!-- زيادة المسافة بين الأدوات ومربع النص -->
-    <button type="button" onclick="execCmd('bold')"><i class="fas fa-bold"></i></button>
-    <button type="button" onclick="execCmd('italic')"><i class="fas fa-italic"></i></button>
-    <button type="button" onclick="execCmd('underline')"><i class="fas fa-underline"></i></button>
-    <!-- أضف هنا الأدوات الإضافية -->
-    <!-- مثال للأدوات الإضافية -->
-    <button type="button" onclick="execCmd('justifyLeft')"><i class="fas fa-align-left"></i></button>
-    <button type="button" onclick="execCmd('justifyCenter')"><i class="fas fa-align-center"></i></button>
-    <button type="button" onclick="execCmd('justifyRight')"><i class="fas fa-align-right"></i></button>
-    <button type="button" onclick="execCmd('justifyFull')"><i class="fas fa-align-justify"></i></button>
-    <button type="button" onclick="execCmd('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
-    <button type="button" onclick="execCmd('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
-    <button type="button" onclick="execCmd('cut')"><i class="fas fa-cut"></i></button>
-    <button type="button" onclick="execCmd('copy')"><i class="fas fa-copy"></i></button>
-    <button type="button" onclick="execCmd('paste')"><i class="fas fa-paste"></i></button>
-    <button type="button" onclick="execCmd('undo')"><i class="fas fa-undo-alt"></i></button>
-    <button type="button" onclick="execCmd('redo')"><i class="fas fa-redo-alt"></i></button>
+                                        <div id="map" style="height: 400px;" class="mt-3"></div>
+                                    </div>
+                                </div>
 
-    <div class="form-control rich-text-editor" contenteditable="true" id="info_{{ $locale }}" style="min-height: 100px;" placeholder="{{ __('facility.enter_facility_info', ['locale' => strtoupper($locale)]) }}">    {!! $facility->info ?? '' !!}
-</div>
+                                <script
+                                    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCXV38aeBDnAiNzIsI97wtDRLapY4vc1Ds&libraries=places&callback=initAutocomplete"
+                                    async defer></script>
+                                <script>
+                                    var autocomplete, map, marker;
 
-  </div>
+                                    function initAutocomplete() {
+                                        map = new google.maps.Map(document.getElementById('map'), {
+                                            center: {
+                                                lat: {{ $facility->latitude }},
+                                                lng: {{ $facility->longitude }}
+                                            },
+                                            zoom: 13
+                                        });
 
-  <!-- Content Editable Div -->
-  <style>
-    .rich-text-editor {
-        background-color: #ecf0f3;
-   color: #333;
-   border: none;
-    margin : 2%;
-   border-radius: 5px;
-   cursor: pointer;
-   box-shadow: inset 3px 3px 5px #c2c2c2, inset -3px -3px 5px #ffffff;
-   position: relative;
+                                        autocomplete = new google.maps.places.Autocomplete(
+                                            document.getElementById('autocomplete'), {
+                                                types: ['geocode']
+                                            }
+                                        );
 
+                                        autocomplete.bindTo('bounds', map);
 
-    }
+                                        marker = new google.maps.Marker({
+                                            map: map,
+                                            draggable: true,
+                                            position: map.getCenter()
+                                        });
 
-</style>
+                                        marker.addListener('dragend', function(event) {
+                                            updateLocation(event.latLng.lat(), event.latLng.lng());
+                                        });
 
+                                        map.addListener('click', function(event) {
+                                            marker.setPosition(event.latLng);
+                                            updateLocation(event.latLng.lat(), event.latLng.lng());
+                                        });
 
-  <!-- Hidden Input Field to Store Data -->
-  <input type="hidden" id="hidden_info_{{ $locale }}" name="translations[{{ $locale }}][info]">
+                                        autocomplete.addListener('place_changed', function() {
+                                            var place = autocomplete.getPlace();
+                                            if (!place.geometry) {
+                                                window.alert("No details available for input: '" + place.name + "'");
+                                                return;
+                                            }
 
-  <!-- Save Button -->
-</div>
+                                            marker.setPosition(place.geometry.location);
+                                            marker.setVisible(true);
+                                            map.setCenter(place.geometry.location);
+                                            map.setZoom(17);
 
-<!-- JavaScript to handle the Rich Text Editor Commands and Save Action -->
-<script>
-  // Function to execute command from the tools
-  function execCmd(command) {
-    document.execCommand(command, false, null);
-    // Update hidden input with contenteditable div's content after change
-    document.getElementById('hidden_info_{{ $locale }}').value = document.getElementById('info_{{ $locale }}').innerHTML;
-  }
+                                            updateLocation(place.geometry.location.lat(), place.geometry.location.lng());
+                                        });
+                                    }
 
-  // Function to save content into the hidden input field
-  function saveContent() {
-    var content = document.getElementById('info_{{ $locale }}').innerHTML;
-    document.getElementById('hidden_info_{{ $locale }}').value = content;
-  }
+                                    function updateLocation(lat, lng) {
+                                        document.getElementById('latitude').value = lat;
+                                        document.getElementById('longitude').value = lng;
+                                        document.getElementById('google_maps_url').value = 'https://www.google.com/maps/search/?api=1&query=' +
+                                            encodeURIComponent(lat + ',' + lng);
+                                    }
+                                </script>
 
-  // Event listener to update hidden input whenever the content changes
-  document.getElementById('info_{{ $locale }}').addEventListener('input', function() {
-    document.getElementById('hidden_info_{{ $locale }}').value = this.innerHTML;
-  });
-</script>
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="name_ar" class="form-label">الاسم (عربي) <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" name="translations[ar][name]" class="form-control"
+                                            id="name_ar" placeholder="أدخل الاسم بالعربية" value="{{ $facility->getTranslation('name', 'ar') }}" required>
+                                    </div>
+                                </div>
 
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="name_en" class="form-label">الاسم (إنجليزي) <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" name="translations[en][name]" class="form-control"
+                                            id="name_en" placeholder="أدخل الاسم بالإنجليزية" value="{{ $facility->getTranslation('name', 'en') }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="info_ar" class="form-label">المعلومات (عربي)</label>
+                                        <textarea name="translations[ar][info]" class="form-control" id="info_ar" rows="3">{{ $facility->getTranslation('info', 'ar') }}</textarea>
+                                    </div>
+                                </div>
 
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="info_en" class="form-label">المعلومات (إنجليزي)</label>
+                                        <textarea name="translations[en][info]" class="form-control" id="info_en" rows="3">{{ $facility->getTranslation('info', 'en') }}</textarea>
+                                    </div>
+                                </div>
 
-        @endforeach
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="email" class="form-label">البريد الإلكتروني للمدير <span
+                                                class="text-danger">*</span></label>
+                                        <input type="email" name="email" class="form-control" id="email"
+                                            placeholder="أدخل البريد الإلكتروني" value="{{ $facility->email }}" required>
+                                    </div>
+                                </div>
 
-        <!-- Separator -->
-        <hr>
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="phone_number" class="form-label">رقم الهاتف</label>
+                                        <input type="text" name="phone_number" class="form-control" id="phone_number"
+                                            placeholder="أدخل رقم الهاتف" value="{{ $facility->phone_number }}">
+                                    </div>
+                                </div>
 
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="password" class="form-label">كلمة المرور <span
+                                                class="text-danger">*</span></label>
+                                        <input type="password" name="password" class="form-control" id="password"
+                                            placeholder="أدخل كلمة المرور">
+                                    </div>
+                                </div>
 
-        <button type="submit" class="btn btn-primary">{{ __('facility.create_facility') }}</button>
-</div></form>
-</div>
+                                <div class="col-md-6">
+                                    <div>
+                                        <label for="user_name" class="form-label">اسم المدير <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" name="user_name" class="form-control" id="user_name"
+                                            placeholder="أدخل اسم المدير" value="{{ $facility->user_name }}" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">تحديث المنشأة</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 @endsection

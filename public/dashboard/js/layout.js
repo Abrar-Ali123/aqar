@@ -1,1 +1,26 @@
-!function(){"use strict";var t,a,e;sessionStorage.getItem("defaultAttribute")&&(t=document.documentElement.attributes,a={},Object.entries(t).forEach(function(t){var e;t[1]&&t[1].nodeName&&"undefined"!=t[1].nodeName&&(e=t[1].nodeName,a[e]=t[1].nodeValue)}),sessionStorage.getItem("defaultAttribute")!==JSON.stringify(a)?(sessionStorage.clear(),window.location.reload()):((e={})["data-layout"]=sessionStorage.getItem("data-layout"),e["data-sidebar-size"]=sessionStorage.getItem("data-sidebar-size"),e["data-bs-theme"]=sessionStorage.getItem("data-bs-theme"),e["data-layout-width"]=sessionStorage.getItem("data-layout-width"),e["data-sidebar"]=sessionStorage.getItem("data-sidebar"),e["data-sidebar-image"]=sessionStorage.getItem("data-sidebar-image"),e["data-layout-direction"]=sessionStorage.getItem("data-layout-direction"),e["data-layout-position"]=sessionStorage.getItem("data-layout-position"),e["data-layout-style"]=sessionStorage.getItem("data-layout-style"),e["data-topbar"]=sessionStorage.getItem("data-topbar"),e["data-preloader"]=sessionStorage.getItem("data-preloader"),e["data-body-image"]=sessionStorage.getItem("data-body-image"),e["data-theme"]=sessionStorage.getItem("data-theme"),e["data-theme-colors"]=sessionStorage.getItem("data-theme-colors"),Object.keys(e).forEach(function(t){e[t]&&document.documentElement.setAttribute(t,e[t])})))}();
+! function() {
+    "use strict";
+    if (sessionStorage.getItem("defaultAttribute")) {
+        for (var t = document.documentElement.attributes, e = {}, a = 0; a < t.length; a++) {
+            var o = t[a];
+            o.nodeName && "undefined" != o.nodeName && (e[o.nodeName] = o.nodeValue)
+        }
+        if (JSON.stringify(e) !== sessionStorage.getItem("defaultAttribute")) sessionStorage.clear(), location.reload();
+        else {
+            var s, d = {
+                "data-layout": sessionStorage.getItem("data-layout"),
+                "data-sidebar-size": sessionStorage.getItem("data-sidebar-size"),
+                "data-bs-theme": sessionStorage.getItem("data-bs-theme"),
+                "data-layout-width": sessionStorage.getItem("data-layout-width"),
+                "data-sidebar": sessionStorage.getItem("data-sidebar"),
+                "data-sidebar-image": sessionStorage.getItem("data-sidebar-image"),
+                "data-layout-direction": sessionStorage.getItem("data-layout-direction"),
+                "data-layout-position": sessionStorage.getItem("data-layout-position"),
+                "data-layout-style": sessionStorage.getItem("data-layout-style"),
+                "data-topbar": sessionStorage.getItem("data-topbar"),
+                "data-preloader": sessionStorage.getItem("data-preloader")
+            };
+            for (s in d) d[s] && document.documentElement.setAttribute(s, d[s])
+        }
+    }
+}();

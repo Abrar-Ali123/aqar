@@ -26,7 +26,6 @@ Route::get('/', function () {
 Route::get('/home', [UserInterfaceController::class, 'index'])->name('home');
 Route::get('/facility/{facility}', [FacilityController::class, 'show'])->name('facility.show');
 
-Route::resource('banks', BankController::class);
 Route::resource('loans', LoanController::class);
 
 Route::post('/register-submit', [AccountManagementComponent::class, 'register'])->name('register.submit');
@@ -34,11 +33,21 @@ Route::get('/account', AccountManagementComponent::class)->name('account.index')
 Route::get('/account', AccountManagementComponent::class)->name('login');
 Route::post('/login-submit', [AccountManagementComponent::class, 'login'])->name('login.submit');
 Route::post('/login-register-submit', [AccountManagementComponent::class, 'loginOrRegister'])->name('login.loginOrRegister');
-Route::post('/book-product/{product}', [BookingController::class, 'store'])->name('book.product');
-Route::post('/book-product/cash/{product}', [BookingController::class, 'store'])->name('booking.cash');
-Route::post('/book-product/bank/{product}', [BookingController::class, 'store'])->name('booking.bank');
-Route::get('/facilities/create', [FacilityController::class, 'create'])->name('facilities.create');
-Route::post('/facilities', [FacilityController::class, 'store'])->name('facilities.store');
+
+Route::prefix('admin')->group(function () {
+    Route::get('/', [AdminController::class, 'dashboard'])->name('admin.index');
+
+    Route::get('facilities', [FacilityController::class, 'index'])->name('facilities.index');
+    Route::get('facilities/create', [FacilityController::class, 'create'])->name('facilities.create');
+    Route::post('facilities', [FacilityController::class, 'store'])->name('facilities.store');
+    Route::get('facilities/edit', [FacilityController::class, 'edit'])->name('facilities.edit');
+    Route::post('facilities/{id}', [FacilityController::class, 'update'])->name('facilities.update');
+    Route::delete('facilities/{id}', [FacilityController::class, 'destroy'])->name('facilities.destroy');
+
+    Route::resource('banks', BankController::class);
+
+});
+
 
 Route::middleware([CheckPermission::class])->prefix('/{facility}')->group(function () {
     Route::resource('/projects', ProjectController::class);
@@ -52,7 +61,7 @@ Route::middleware([CheckPermission::class])->prefix('/{facility}')->group(functi
 
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
-    Route::post('/products/create', [ProductController::class, 'store'])->name('products.store');
+    Route::post('/products/', [ProductController::class, 'store'])->name('products.store');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
@@ -60,6 +69,10 @@ Route::middleware([CheckPermission::class])->prefix('/{facility}')->group(functi
     Route::get('/products/delete/{product}', [ProductController::class, 'delete'])->name('products.delete');
 
     Route::get('/bookings', [BookingController::class, 'showBookings'])->name('facility.bookings');
+    Route::post('/book-product/{product}', [BookingController::class, 'store'])->name('book.product');
+    Route::post('/book-product/cash/{product}', [BookingController::class, 'store'])->name('booking.cash');
+    Route::post('/book-product/bank/{product}', [BookingController::class, 'store'])->name('booking.bank');
+
 
     Route::get('/search/products', [ProductController::class, 'search'])->name('products.search');
     Route::get('/roles', RoleForm::class)->name('roles.index');
@@ -74,9 +87,6 @@ Route::middleware([CheckPermission::class])->prefix('/{facility}')->group(functi
 
 
 
-Route::prefix('admin')->as('admin.')->group(function () {
-    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
-});
 
 Route::get('/attributes', AttributeManager::class)->name('attributes.index');
 

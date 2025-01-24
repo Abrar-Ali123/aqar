@@ -52,6 +52,7 @@ class FacilityController extends Controller
 
     public function store(Request $request)
     {
+
         $facility = new Facility;
         $facility->is_active = $request->has('is_active');
         $facility->License = $request->License;
