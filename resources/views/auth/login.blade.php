@@ -227,7 +227,7 @@
                             },
                             success: function(res) {
                                 if (res.status === 'done') {
-                                    window.location.href = "/dashboard";
+                                    window.location.href = "/user/profile";
                                 } else if (res.status === 'register') {
                                     window.location.href =
                                     "/register"; // تحويل المستخدم إلى صفحة التسجيل
@@ -271,7 +271,7 @@
                 }),
                 success: function(res) {
                     if (res.status === 'registered') {
-                        window.location.href = "/dashboard";
+                        window.location.href = "/user/profile";
                     }
                 },
                 error: function(xhr) {

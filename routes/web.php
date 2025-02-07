@@ -9,6 +9,7 @@ use App\Http\Controllers\LoanController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\StatusController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserInterfaceController;
 use App\Http\Middleware\CheckPermission;
 use App\Livewire\AccountManagementComponent;
@@ -34,6 +35,11 @@ Route::get('/account', AccountManagementComponent::class)->name('login');
 Route::post('/login-submit', [AccountManagementComponent::class, 'login'])->name('login.submit');
 Route::post('/login-register-submit', [AccountManagementComponent::class, 'loginOrRegister'])->name('login.loginOrRegister');
 
+
+Route::prefix('user')->group(function () {
+    Route::get('/profile', [UserController::class, 'profile'])->name('user.index');
+});
+
 Route::prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('admin.index');
 
@@ -45,7 +51,6 @@ Route::prefix('admin')->group(function () {
     Route::delete('facilities/{id}', [FacilityController::class, 'destroy'])->name('facilities.destroy');
 
     Route::resource('banks', BankController::class);
-
 });
 
 

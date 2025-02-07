@@ -2510,7 +2510,7 @@
     right: 0;
     top: 0;
     opacity: .7;
-    background-color: #000
+    background-color: rgb(28 45 55) !important;
 }
 
 .customizer-setting {

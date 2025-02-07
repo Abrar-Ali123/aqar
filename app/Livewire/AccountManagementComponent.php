@@ -132,14 +132,11 @@ class AccountManagementComponent extends Component
 
         if ($user) {
             Auth::login($user);
-
             return response()->json(['status' => 'done']);
         } else {
-
-            return response()->json(['status' => 'register']);
-
+            Auth::logout();
+            return response()->json(['status' => 'register', 'redirect' => route('register')]);
         }
-
     }
 
     public function loginOrRegister(Request $request)
