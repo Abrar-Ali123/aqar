@@ -5,21 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class AttributeTranslation extends Model
+class ProductAttributeValue extends Model
 {
     use HasFactory;
 
-    public $timestamps = false;
-
     protected $fillable = [
+        'product_id',
         'attribute_id',
-        'locale',
-        'name',
-        'symbol',
+        'value',
     ];
 
     /**
-     * Get the attribute that owns the translation.
+     * Get the product that owns the attribute value.
+     */
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Get the attribute that owns the attribute value.
      */
     public function attribute()
     {

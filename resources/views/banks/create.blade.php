@@ -11,7 +11,7 @@
 
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('banks.index') }}">البنوك</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('admin.banks.index') }}">البنوك</a></li>
                             <li class="breadcrumb-item active">إضافة بنك</li>
                         </ol>
                     </div>
@@ -27,7 +27,7 @@
                         <h4 class="card-title mb-0">تفاصيل البنك</h4>
                     </div>
                     <div class="card-body">
-                        <form action="{{ route('banks.store') }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ route('admin.banks.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <div class="row gy-4">
                                 <div class="col-md-12">

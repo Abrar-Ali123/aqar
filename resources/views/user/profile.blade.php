@@ -63,6 +63,7 @@
                     </div>
 
                     <div class="">
+
                         <a href="#" class="btn btn-primary"><i
                                 class="ri-edit-box-line align-bottom"></i> تحرير الملف الشخصي</a>
                     </div>
@@ -193,143 +194,118 @@
                                 <h6 class="card-title mb-0">التفاصيل الشخصية</h6>
                             </div>
                             <div class="card-body">
-                                <form action="javascript:void(0);">
+                                @if(session('success'))
+                                    <div class="alert alert-success">
+                                        {{ session('success') }}
+                                    </div>
+                                @endif
+
+                                @if(session('error'))
+                                    <div class="alert alert-danger">
+                                        {{ session('error') }}
+                                    </div>
+                                @endif
+
+                                @if ($errors->any())
+                                    <div class="alert alert-danger">
+                                        <ul>
+                                            @foreach ($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+                                <form action="{{ route('user.profile.update') }}" method="POST" enctype="multipart/form-data">
+                                    @csrf
+                                    @method('PUT')
+                                    
                                     <div class="row">
                                         <div class="col-lg-6">
                                             <div class="mb-3">
-                                                <label for="firstnameInput" class="form-label">أولاً
-اسم</label>
-                                                <input type="text" class="form-control" id="firstnameInput"
-                                                    placeholder="Enter your firstname" value="Richard">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-6">
-                                            <div class="mb-3">
-                                                <label for="lastnameInput" class="form-label fs-md">آخر
-اسم</label>
-                                                <input type="text" class="form-control fs-md" id="lastnameInput"
-                                                    placeholder="Enter your last name" value="Marshall">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-6">
-                                            <div class="mb-3">
-                                                <label for="phonenumberInput" class="form-label fs-md">هاتف
-رقم</label>
-                                                <input type="text" class="form-control fs-md" id="phonenumberInput"
-                                                    placeholder="Enter your phone number" value="617 219 6245">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-6">
-                                            <div class="mb-3">
-                                                <label for="emailInput" class="form-label fs-md">بريد إلكتروني
-عنوان</label>
-                                                <input type="email" class="form-control fs-md" id="emailInput"
-                                                    placeholder="Enter your email" value="alexandramarshall@steex.com">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-6">
-                                            <div class="mb-3">
-                                                <label for="birthDateInput" class="form-label fs-md">الولادة
-من التاريخ</label>
-                                                <input type="text" class="form-control fs-md"
-                                                    data-provider="flatpickr" id="birthDateInput"
-                                                    data-date-format="d M, Y" data-default-date="24 June, 1998"
-                                                    placeholder="Select date">
+                                                <label for="nameInput" class="form-label fs-md">الاسم</label>
+                                                <input type="text" class="form-control" id="nameInput" name="name"
+                                                    value="{{ auth()->user()->name }}" required>
                                             </div>
                                         </div>
                                         <div class="col-lg-6">
                                             <div class="mb-3">
-                                                <label for="JoiningdatInput" class="form-label fs-md">تاريخ الانضمام</label>
-                                                <input type="text" class="form-control fs-md"
-                                                    data-provider="flatpickr" id="JoiningdatInput"
-                                                    data-date-format="d M, Y" data-default-date="30 Oct, 2023"
-                                                    placeholder="Select date">
+                                                <label for="emailInput" class="form-label fs-md">البريد الإلكتروني</label>
+                                                <input type="email" class="form-control" id="emailInput" name="email"
+                                                    value="{{ auth()->user()->email }}" required>
                                             </div>
                                         </div>
-                                        <!--end col-->
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="phoneInput" class="form-label fs-md">رقم الهاتف</label>
+                                                <input type="text" class="form-control" id="phoneInput" name="phone_number"
+                                                    value="{{ auth()->user()->phone_number }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="whatsappInput" class="form-label fs-md">رقم الواتساب</label>
+                                                <input type="text" class="form-control" id="whatsappInput" name="whatsapp_number"
+                                                    value="{{ auth()->user()->whatsapp_number }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Social Media Links -->
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="facebookInput" class="form-label fs-md">فيسبوك</label>
+                                                <input type="url" class="form-control" id="facebookInput" name="facebook"
+                                                    value="{{ auth()->user()->facebook }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="twitterInput" class="form-label fs-md">تويتر</label>
+                                                <input type="url" class="form-control" id="twitterInput" name="twitter"
+                                                    value="{{ auth()->user()->twitter }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="instagramInput" class="form-label fs-md">انستغرام</label>
+                                                <input type="url" class="form-control" id="instagramInput" name="instagram"
+                                                    value="{{ auth()->user()->instagram }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Location Information -->
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="locationInput" class="form-label fs-md">رابط خرائط جوجل</label>
+                                                <input type="url" class="form-control" id="locationInput" name="google_maps_url"
+                                                    value="{{ auth()->user()->google_maps_url }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Bank Information if user has bank_id -->
+                                        @if(auth()->user()->bank_id)
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="bankAccountInput" class="form-label fs-md">رقم الحساب البنكي</label>
+                                                <input type="text" class="form-control" id="bankAccountInput" name="bank_account"
+                                                    value="{{ auth()->user()->bank_account }}">
+                                            </div>
+                                        </div>
+                                        @endif
+                                        
+                                        <!-- Avatar Upload -->
                                         <div class="col-lg-12">
                                             <div class="mb-3">
-                                                <label for="skillsInput" class="form-label fs-md">مهارات</label>
-                                                <select class="form-control fs-md" name="skillsInput" data-choices
-                                                    data-choices-text-unique-true multiple id="skillsInput">
-                                                    <option value="illustrator" class="fs-sm">الرسام
-                                                    </option>
-                                                    <option value="photoshop" class="fs-sm">فوتوشوب
-                                                    </option>
-                                                    <option value="css" class="fs-sm">css</option>
-                                                    <option value="html" class="fs-sm">html</option>
-                                                    <option value="javascript" class="fs-sm" selected>
-                                                        جافا سكريبت</option>
-                                                    <option value="python" class="fs-sm">بيثون</option>
-                                                    <option value="php" class="fs-sm">php</option>
-                                                </select>
+                                                <label for="avatarInput" class="form-label fs-md">الصورة الشخصية</label>
+                                                <input type="file" class="form-control" id="avatarInput" name="avatar">
                                             </div>
                                         </div>
-                                        <!--end col-->
-                                        <div class="col-lg-6">
-                                            <div class="mb-3">
-                                                <label for="designationInput" class="form-label fs-md">تعيين</label>
-                                                <input type="text" class="form-control fs-md" id="designationInput"
-                                                    placeholder="Designation" value="Web Developer">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-6">
-                                            <div class="mb-3">
-                                                <label for="websiteInput1" class="form-label fs-md">موقع إلكتروني</label>
-                                                <input type="text" class="form-control fs-md" id="websiteInput1"
-                                                    placeholder="www.example.com" value="www.themesbrand.com">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-4">
-                                            <div class="mb-3">
-                                                <label for="cityInput" class="form-label fs-md">مدينة</label>
-                                                <input type="text" class="form-control fs-md" id="cityInput"
-                                                    placeholder="City" value="Phoenix">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-4">
-                                            <div class="mb-3">
-                                                <label for="countryInput" class="form-label fs-md">دولة</label>
-                                                <input type="text" class="form-control fs-md" id="countryInput"
-                                                    placeholder="Country" value="USA">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-4">
-                                            <div class="mb-3">
-                                                <label for="zipcodeInput" class="form-label fs-md">أَزِيز
-شفرة</label>
-                                                <input type="text" class="form-control fs-md" minlength="5"
-                                                    maxlength="6" id="zipcodeInput" placeholder="Enter zipcode"
-                                                    value="00012">
-                                            </div>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-12">
-                                            <div class="mb-3 pb-2">
-                                                <label for="exampleFormControlTextarea"
-                                                    class="form-label fs-md">وصف</label>
-                                                <textarea class="form-control fs-md" id="exampleFormControlTextarea" placeholder="Enter your description"
-                                                    rows="5">A Web Developer creates and designs different websites for clients. They are responsible for their aesthetic as well as their function. Professionals in this field may also need to be able to ensure sites are compatible with multiple types of media. Web Developers need to have a firm understanding of programming and graphical design. Having a strong resume that emphasizes these attributes makes it significantly easier to get hired as a Web Developer. As a web designer, my objective is to make a positive impact on clients, co-workers, and the Internet using my skills and experience to design compelling and attractive websites. Solving code problems. Editing & Design with designing team in the company to build perfect web designs.</textarea>
-                                            </div>
-                                        </div>
-                                        <!--end col-->
+                                        
                                         <div class="col-lg-12">
                                             <div class="hstack gap-2 justify-content-end">
-                                                <button type="submit" class="btn btn-primary">التحديثات</button>
-                                                <button type="button" class="btn btn-subtle-danger">يلغي</button>
+                                                <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
                                             </div>
                                         </div>
-                                        <!--end col-->
                                     </div>
-                                    <!--end row-->
                                 </form>
                             </div>
                         </div>

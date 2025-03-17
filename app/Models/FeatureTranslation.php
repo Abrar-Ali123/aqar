@@ -1,19 +1,24 @@
 <?php
 
-
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class FeatureTranslation extends Model
 {
     use HasFactory;
-     protected $fillable = [
+
+    protected $fillable = [
         'feature_id',
-        'name',
         'locale',
+        'name',
     ];
-      public function feature()
+
+    /**
+     * Get the feature that owns the translation.
+     */
+    public function feature()
     {
         return $this->belongsTo(Feature::class);
     }

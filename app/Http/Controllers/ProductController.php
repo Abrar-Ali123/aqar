@@ -82,13 +82,12 @@ class ProductController extends Controller
         return view('parts.product', compact('products', 'categories', 'facilities', 'attributes'));
     }
 
-    public function create($facilityId)
+    public function create()
     {
-        $facility = Facility::findOrFail($facilityId);
         $categories = Category::all();
         $attributes = Attribute::with('translations')->get();
 
-        return view('products.create', compact('categories', 'facility', 'attributes'));
+        return view('products.create', compact('categories',  'attributes'));
     }
 
     public function store(Request $request)
