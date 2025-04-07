@@ -93,6 +93,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/features/{feature}/edit', [FeatureController::class, 'edit'])->name('features.edit');
     Route::put('/features/{feature}', [FeatureController::class, 'update'])->name('features.update');
     Route::delete('/features/{feature}', [FeatureController::class, 'destroy'])->name('features.destroy');
+
+    // Permissions Routes
+    Route::resource('permissions', \App\Http\Controllers\Admin\PermissionController::class);
+
+    // Roles Routes
+    Route::resource('roles', \App\Http\Controllers\Admin\RoleController::class);
 });
 
 
