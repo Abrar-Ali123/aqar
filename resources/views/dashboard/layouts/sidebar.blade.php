@@ -159,6 +159,40 @@
                 <li class="menu-title"><span>الإعدادات</span></li>
 
                 <li class="nav-item">
+                    <a class="nav-link menu-link collapsed" href="#sidebarPermissions" data-bs-toggle="collapse"
+                        role="button" aria-expanded="false" aria-controls="sidebarPermissions">
+                        <i class="ti ti-shield-lock"></i> <span>الصلاحيات</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarPermissions">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.permissions.create') }}" class="nav-link">إضافة صلاحية</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.permissions.index') }}" class="nav-link">عرض الصلاحيات</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link collapsed" href="#sidebarRoles" data-bs-toggle="collapse"
+                        role="button" aria-expanded="false" aria-controls="sidebarRoles">
+                        <i class="ti ti-users"></i> <span>الأدوار</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarRoles">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.roles.create') }}" class="nav-link">إضافة دور</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.roles.index') }}" class="nav-link">عرض الأدوار</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="nav-item">
                     <a class="nav-link menu-link" href="#">
                         <i class="ti ti-settings"></i> <span>إعدادات الموقع</span>
                     </a>
