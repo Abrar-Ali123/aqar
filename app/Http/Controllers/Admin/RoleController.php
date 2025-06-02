@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Permission;
 use App\Models\Role;
-use App\Models\RoleTranslation;
+use App\Models\Language;
+use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,124 +13,206 @@ class RoleController extends Controller
 {
     public function index()
     {
-        $roles = Role::with('translations')->paginate(10);
-        return view('dashboard.roles.index', compact('roles'));
+        if (!auth()->user()->can('view roles')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $roles = Role::with(['translations', 'permissions'])
+            ->orderBy('order')
+            ->paginate(10);
+
+        return view('admin.roles.index', compact('roles'));
     }
 
     public function create()
     {
-        $permissions = Permission::with('translations')->get();
-        return view('dashboard.roles.create', compact('permissions'));
+        if (!auth()->user()->can('create roles')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $languages = Language::active()->orderBy('order')->get();
+        $permissions = Permission::all();
+        return view('admin.roles.create', compact('languages', 'permissions'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name_ar' => 'nullable|string|max:255',
-            'name_en' => 'nullable|string|max:255',
-            'is_primary' => 'nullable',
-            'is_paid' => 'nullable',
-            'price' => 'nullable|numeric|min:0',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
-        ]);
+        if (!auth()->user()->can('create roles')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $rules = $this->getValidationRules();
+        $validated = $request->validate($rules);
 
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($request, $validated) {
+                // إنشاء الدور
+                $role = Role::create([
+                    'guard_name' => 'web',
+                    'is_admin' => $request->boolean('is_admin'),
+                    'is_default' => $request->boolean('is_default'),
+                    'status' => $request->status ?? 'active',
+                    'order' => $request->order ?? 0,
+                ]);
 
-            $role = Role::create([
-                'is_primary' => $request->boolean('is_primary'),
-                'is_paid' => $request->boolean('is_paid'),
-                'price' => $request->is_paid ? $request->price : null,
-            ]);
+                // حفظ الترجمات
+                foreach ($validated['name'] as $locale => $name) {
+                    if ($name || Language::where('code', $locale)->value('is_required')) {
+                        $role->translations()->create([
+                            'locale' => $locale,
+                            'name' => $name,
+                            'description' => $validated['description'][$locale] ?? null,
+                        ]);
+                    }
+                }
 
-            RoleTranslation::create([
-                'role_id' => $role->id,
-                'locale' => 'ar',
-                'name' => $request->name_ar,
-            ]);
+                // إضافة الصلاحيات
+                if ($request->has('permissions')) {
+                    $role->permissions()->sync($request->permissions);
+                }
 
-            RoleTranslation::create([
-                'role_id' => $role->id,
-                'locale' => 'en',
-                'name' => $request->name_en,
-            ]);
-
-            $role->permissions()->attach($request->permissions);
-
-            DB::commit();
+                // إذا كان الدور افتراضياً، نجعل باقي الأدوار غير افتراضية
+                if ($role->is_default) {
+                    Role::where('id', '!=', $role->id)
+                        ->update(['is_default' => false]);
+                }
+            });
 
             return redirect()->route('admin.roles.index')
-                ->with('success', 'تم إنشاء الدور بنجاح');
+                ->with('success', __('messages.role_created_successfully'));
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إنشاء الدور');
+                ->with('error', __('messages.role_create_error'))
+                ->withInput();
         }
-    }
-
-    public function show(Role $role)
-    {
-        return view('dashboard.roles.show', compact('role'));
     }
 
     public function edit(Role $role)
     {
-        $permissions = Permission::with('translations')->get();
-        return view('dashboard.roles.edit', compact('role', 'permissions'));
+        if (!auth()->user()->can('edit roles')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $languages = Language::active()->orderBy('order')->get();
+        $translations = $role->translations->keyBy('locale');
+        $permissions = Permission::all();
+        $selectedPermissions = $role->permissions->pluck('id')->toArray();
+
+        return view('admin.roles.edit', compact('role', 'languages', 'translations', 'permissions', 'selectedPermissions'));
     }
 
     public function update(Request $request, Role $role)
     {
-        $request->validate([
-            'name_ar' => 'nullable|string|max:255',
-            'name_en' => 'nullable|string|max:255',
-            'is_primary' => 'nullable',
-            'is_paid' => 'nullable',
-            'price' => 'nullable|numeric|min:0',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
-        ]);
+        if (!auth()->user()->can('edit roles')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $rules = $this->getValidationRules($role->id);
+        $validated = $request->validate($rules);
 
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($request, $role, $validated) {
+                // تحديث الدور
+                $role->update([
+                    'is_admin' => $request->boolean('is_admin'),
+                    'is_default' => $request->boolean('is_default'),
+                    'status' => $request->status ?? $role->status,
+                    'order' => $request->order ?? $role->order,
+                ]);
 
-            $role->update([
-                'is_primary' => $request->boolean('is_primary'),
-                'is_paid' => $request->boolean('is_paid'),
-                'price' => $request->is_paid ? $request->price : null,
-            ]);
+                // تحديث الترجمات
+                foreach ($validated['name'] as $locale => $name) {
+                    $role->translations()->updateOrCreate(
+                        ['locale' => $locale],
+                        [
+                            'name' => $name,
+                            'description' => $validated['description'][$locale] ?? null,
+                        ]
+                    );
+                }
 
-            $role->translations()->where('locale', 'ar')->update([
-                'name' => $request->name_ar,
-            ]);
+                // تحديث الصلاحيات
+                if ($request->has('permissions')) {
+                    $role->permissions()->sync($request->permissions);
+                } else {
+                    $role->permissions()->detach();
+                }
 
-            $role->translations()->where('locale', 'en')->update([
-                'name' => $request->name_en,
-            ]);
-
-            $role->permissions()->sync($request->permissions);
-
-            DB::commit();
+                // إذا كان الدور افتراضياً، نجعل باقي الأدوار غير افتراضية
+                if ($role->is_default) {
+                    Role::where('id', '!=', $role->id)
+                        ->update(['is_default' => false]);
+                }
+                // إذا كان الدور الوحيد، نجعله افتراضياً
+                elseif (Role::count() === 1) {
+                    $role->update(['is_default' => true]);
+                }
+            });
 
             return redirect()->route('admin.roles.index')
-                ->with('success', 'تم تحديث الدور بنجاح');
+                ->with('success', __('messages.role_updated_successfully'));
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء تحديث الدور');
+                ->with('error', __('messages.role_update_error'))
+                ->withInput();
         }
     }
 
     public function destroy(Role $role)
     {
+        if (!auth()->user()->can('delete roles')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        // لا يمكن حذف الدور الافتراضي
+        if ($role->is_default) {
+            return redirect()->back()
+                ->with('error', __('messages.cannot_delete_default_role'));
+        }
+
+        // التحقق من عدم وجود مستخدمين
+        if ($role->users()->exists()) {
+            return redirect()->back()
+                ->with('error', __('messages.role_has_users'));
+        }
+
         try {
-            $role->delete();
+            DB::transaction(function () use ($role) {
+                // حذف الدور (سيتم حذف الترجمات تلقائياً بسبب onDelete('cascade'))
+                $role->delete();
+
+                // إذا كان هذا آخر دور، نجعل أول دور متبقي هو الافتراضي
+                if (Role::count() === 1) {
+                    Role::first()->update(['is_default' => true]);
+                }
+            });
+
             return redirect()->route('admin.roles.index')
-                ->with('success', 'تم حذف الدور بنجاح');
+                ->with('success', __('messages.role_deleted_successfully'));
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء حذف الدور');
+                ->with('error', __('messages.role_delete_error'));
         }
+    }
+
+    private function getValidationRules($roleId = null): array
+    {
+        $rules = [
+            'is_admin' => 'boolean',
+            'is_default' => 'boolean',
+            'status' => 'nullable|in:active,inactive',
+            'order' => 'nullable|integer|min:0',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'exists:permissions,id',
+        ];
+
+        // إضافة قواعد التحقق للحقول المترجمة
+        foreach (Language::active()->get() as $language) {
+            $required = $language->is_required ? 'required' : 'nullable';
+            $rules["name.{$language->code}"] = "{$required}|string|max:255";
+            $rules["description.{$language->code}"] = "nullable|string";
+        }
+
+        return $rules;
     }
 }

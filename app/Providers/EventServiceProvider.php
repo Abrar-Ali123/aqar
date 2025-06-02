@@ -13,6 +13,10 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
+        // أحداث النظام الأساسية
+        \App\Events\UniversalEntityEvent::class => [
+            \App\Listeners\UniversalEntityEventListener::class,
+        ],
         \App\Events\StatusChanged::class => [
             \App\Listeners\HandleAutomatedStatus::class,
         ],

@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
-            $table->JSON('pages');
+            // $table->string('name'); // تم حذف عمود الاسم من جدول permissions الأساسي، الاسم في جدول permission_translations فقط
+            $table->string('guard_name')->default('web');
+            $table->json('pages')->nullable();
             $table->timestamps();
         });
     }

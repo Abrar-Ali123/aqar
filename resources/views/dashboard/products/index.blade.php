@@ -51,7 +51,7 @@
                                     <td>{{ number_format($product->price, 2) }}</td>
                                     <td>{{ $product->category->name ?? 'غير مصنف' }}</td>
                                     <td>
-                                        @switch($product->property_type)
+                                        @switch($product->type)
                                             @case('apartment')
                                                 <span class="badge bg-info">شقة</span>
                                                 @break

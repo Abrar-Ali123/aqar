@@ -1,72 +1,106 @@
 <div>
-     <form wire:submit.prevent="{{ $editMode ? 'updateCategory' : 'storeCategory' }}">
-        <div>
-            <label for="isSubcategory">Is Subcategory?</label>
+    <form wire:submit.prevent="{{ $editMode ? 'updateCategory' : 'storeCategory' }}">
+        <div class="mb-3">
+            <label for="isSubcategory" class="form-label">هل هي فئة فرعية؟</label>
             <input type="checkbox" id="isSubcategory" wire:model="isSubcategory" wire:change="updateSubcategory">
         </div>
 
         @if ($isSubcategory)
-            <div>
-                <label for="parent_id">Parent Category:</label>
-                <select id="parent_id" wire:model="parent_id">
-                    <option value="">Select Parent</option>
+            <div class="mb-3">
+                <label for="parent_id" class="form-label">الفئة الرئيسية:</label>
+                <select id="parent_id" wire:model="parent_id" class="form-select">
+                    <option value="">اختر الفئة الرئيسية</option>
                     @foreach ($categories as $categoryOption)
                         @if (!$category_id || $categoryOption->id != $category_id)
-                            <option value="{{ $categoryOption->id }}">{{ $categoryOption->name }}</option>
+                            <option value="{{ $categoryOption->id }}">{{ $categoryOption->getTranslation('name', app()->getLocale()) }}</option>
                         @endif
                     @endforeach
                 </select>
-                @error('parent_id') <span class="error">{{ $message }}</span> @enderror
+                @error('parent_id') <span class="text-danger">{{ $message }}</span> @enderror
             </div>
         @endif
 
-        @foreach (config('app.locales') as $locale)
-            <div>
-                <label for="name_{{ $locale }}">Name ({{ $locale }}):</label>
-                <input type="text" id="name_{{ $locale }}" wire:model="translations.{{ $locale }}" required>
-                @error('translations.' . $locale) <span class="error">{{ $message }}</span> @enderror
-            </div>
-        @endforeach
+        <x-translatable-field 
+            name="name" 
+            label="اسم الفئة"
+            :languages="$languages"
+            :translations="$translations['name'] ?? []"
+            required
+        />
 
-        <div>
-            <label for="image">Image:</label>
-            <input type="file" id="image" wire:model="tempImage">
-            @error('tempImage') <span class="error">{{ $message }}</span> @enderror
+        <x-translatable-field 
+            name="description" 
+            label="وصف الفئة"
+            type="textarea"
+            :languages="$languages"
+            :translations="$translations['description'] ?? []"
+        />
+
+        <div class="mb-3">
+            <label for="image" class="form-label">الصورة:</label>
+            <input type="file" id="image" wire:model="tempImage" class="form-control">
+            @error('tempImage') <span class="text-danger">{{ $message }}</span> @enderror
             @if ($tempImage)
-             @endif
+                <img src="{{ $tempImage->temporaryUrl() }}" class="mt-2" width="100">
+            @elseif($editMode && $category && $category->image)
+                <img src="{{ Storage::url($category->image) }}" class="mt-2" width="100">
+            @endif
         </div>
 
-        <button type="submit">{{ $editMode ? 'Update Category' : 'Save Category' }}</button>
+        <button type="submit" class="btn btn-primary">
+            {{ $editMode ? 'تحديث الفئة' : 'حفظ الفئة' }}
+        </button>
     </form>
 
-    <hr>
+    <hr class="my-4">
 
-     <h2>Categories List</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Parent</th>
-                <th>Image</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($categories as $category)
-                <tr>
-                    <td>{{ $category->name }}</td>
-                    <td>{{ $category->parent ? $category->parent->name : 'No Parent' }}</td>
-                    <td>
-                        @if ($category->image)
-                            <img src="{{ Storage::url($category->image) }}" width="50">
-                        @endif
-                    </td>
-                    <td>
-                        <button wire:click="editCategory({{ $category->id }})">Edit</button>
-                        <button wire:click="deleteCategory({{ $category->id }})">Delete</button>
-                    </td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">قائمة الفئات</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الفئة الرئيسية</th>
+                            <th>الصورة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($categories as $category)
+                            <tr>
+                                <td>{{ $category->getTranslation('name', app()->getLocale()) }}</td>
+                                <td>
+                                    @if($category->parent)
+                                        {{ $category->parent->getTranslation('name', app()->getLocale()) }}
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($category->image)
+                                        <img src="{{ Storage::url($category->image) }}" width="50" class="img-thumbnail">
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" wire:click="editCategory({{ $category->id }})">
+                                        <i class="fas fa-edit"></i> تعديل
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" wire:click="deleteCategory({{ $category->id }})"
+                                            onclick="return confirm('هل أنت متأكد من حذف هذه الفئة؟')">
+                                        <i class="fas fa-trash"></i> حذف
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>

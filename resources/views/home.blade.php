@@ -1,11 +1,12 @@
+@extends('layouts.app')
 
-<div class="container">
-    <h1>قائمة المنشآت</h1>
-    <ul>
-        @foreach($facilities as $facility)
-            <li>
-                <a href="{{ route('facility.show', $facility->id) }}">{{ $facility->name }}</a>
-            </li>
-        @endforeach
-    </ul>
+@section('content')
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">المنشآت المميزة</h2>
+            <x-facilities-list :facilities="$featuredFacilities" />
+        </div>
+    </div>
 </div>
+@endsection

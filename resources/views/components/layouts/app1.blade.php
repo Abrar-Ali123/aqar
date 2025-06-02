@@ -26,8 +26,8 @@
 	<!-- Favicon icon -->
 	<link rel="icon" type="image/png" href="images/favicon.png">
 
-	<link href="{{ asset('assets/vendor/jquery-nice-select/css/nice-select.css') }}" rel="stylesheet">
-       <link href="{{ asset('assets/css/style.css') }}" rel="stylesheet">
+	<link href="{{ asset('dashboard/libs/jquery-nice-select/css/nice-select.css') }}" rel="stylesheet">
+       <link href="{{ asset('dashboard/css/style.css') }}" rel="stylesheet">
 
 
 </head>
@@ -1008,12 +1008,12 @@
         Scripts
     ***********************************-->
     <!-- Required vendors -->
-   <script src="{{ asset('assets/vendor/global/global.min.js') }}"></script>
-	<script src="{{ asset('assets/vendor/jquery-nice-select/js/jquery.nice-select.min.js') }}"></script>
-    <script src="{{ asset('assets/js/custom.min.js') }}"></script>
-	<script src="{{ asset('assets/js/deznav-init.js') }}"></script>
-	<script src="{{ asset('assets/js/demo.js') }}"></script>
-    <script src="{{ asset('assets/js/styleSwitcher.js') }}"></script>
+   <script src="{{ asset('dashboard/libs/jquery/jquery.min.js') }}"></script>
+	<script src="{{ asset('dashboard/libs/jquery-nice-select/js/jquery.nice-select.min.js') }}"></script>
+    <script src="{{ asset('dashboard/js/custom.min.js') }}"></script>
+	<script src="{{ asset('dashboard/js/deznav-init.js') }}"></script>
+	<script src="{{ asset('dashboard/js/demo.js') }}"></script>
+    <script src="{{ asset('dashboard/js/styleSwitcher.js') }}"></script>
 </body>
 
 <!-- Mirrored from griya.dexignzone.com/xhtml/empty-page.html by HTTrack Website Copier/3.x [XR&CO'2014], Mon, 28 Oct 2024 14:04:59 GMT -->

@@ -1,0 +1,69 @@
+/* RTL Styles for Arabic */
+[dir="rtl"] .hero-section .search-box {
+    text-align: right;
+}
+
+[dir="rtl"] .hero-section .input-group .btn {
+    border-radius: 0.5rem 0 0 0.5rem;
+}
+
+[dir="rtl"] .hero-section .input-group .form-control {
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+[dir="rtl"] .category-content {
+    text-align: right;
+}
+
+[dir="rtl"] .facility-body {
+    text-align: right;
+}
+
+[dir="rtl"] .facility-stats {
+    text-align: center;
+}
+
+[dir="rtl"] .product-content {
+    text-align: right;
+}
+
+[dir="rtl"] .product-facility {
+    text-align: right;
+}
+
+[dir="rtl"] .product-facility img {
+    margin-right: 0;
+    margin-left: 0.75rem;
+}
+
+[dir="rtl"] .section-header {
+    text-align: center;
+}
+
+[dir="rtl"] .me-2 {
+    margin-right: 0 !important;
+    margin-left: 0.5rem !important;
+}
+
+[dir="rtl"] .ms-2 {
+    margin-left: 0 !important;
+    margin-right: 0.5rem !important;
+}
+
+/* Fix Font Awesome icons direction */
+[dir="rtl"] .fa-search {
+    transform: scaleX(-1);
+}
+
+/* Fix input placeholder alignment */
+[dir="rtl"] input::placeholder,
+[dir="rtl"] select.form-select {
+    text-align: right;
+}
+
+/* Fix select arrows position */
+[dir="rtl"] .form-select {
+    background-position: left 0.75rem center;
+    padding-right: 0.75rem;
+    padding-left: 2.25rem;
+}

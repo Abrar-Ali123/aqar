@@ -2,53 +2,46 @@
 
 namespace App\Models;
 
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
-use Astrotomic\Translatable\Translatable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Feature extends Model implements TranslatableContract
+class Feature extends Model
 {
-    use HasFactory , Translatable;
-
-    public $translatedAttributes = ['name'];
+    use HasTranslations, SoftDeletes;
 
     protected $fillable = [
-        'name',
         'icon',
+        'type',
+        'order',
+        'is_active',
+        'translations'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'order' => 'integer',
+        'translations' => 'array'
     ];
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'product_feature', 'product_id', 'feature_id');
+        return $this->belongsToMany(Product::class, 'product_features')
+            ->withTimestamps();
     }
 
-    public function buildings()
+    public function scopeActive($query)
     {
-        return $this->belongsToMany(Building::class, 'product_feature', 'feature_id', 'building_id');
+        return $query->where('is_active', true);
     }
 
-    public function lands()
+    public function scopeOrdered($query)
     {
-        return $this->belongsToMany(Land::class, 'product_feature', 'land_id', 'feature_id');
+        return $query->orderBy('order');
     }
 
-    /**
-     * Get the product features for the feature.
-     */
-    public function productFeatures()
+    public function getIconUrlAttribute()
     {
-        return $this->hasMany(ProductFeature::class);
-    }
-
-    /**
-     * Get the feature name based on locale.
-     */
-    public function getNameAttribute()
-    {
-        $locale = app()->getLocale();
-        $translation = $this->translations()->where('locale', $locale)->first();
-
-        return $translation ? $translation->name : '';
+        return $this->icon ? asset('storage/' . $this->icon) : null;
     }
 }

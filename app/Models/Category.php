@@ -2,82 +2,73 @@
 
 namespace App\Models;
 
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
-use Astrotomic\Translatable\Translatable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Category extends Model implements TranslatableContract
+class Category extends Model
 {
-    use HasFactory;
-    use Translatable;
+    use SoftDeletes;
 
     protected $fillable = [
         'parent_id',
+        'icon',
         'image',
+        'order',
+        'is_active'
     ];
 
-    public $translatedAttributes = ['name'];
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
 
+    protected $translatedAttributes = [
+        'name'
+    ];
+
+    // العلاقة مع الفئة الأب
     public function parent()
     {
         return $this->belongsTo(Category::class, 'parent_id');
     }
 
-    /**
-     * Get the child categories.
-     */
+    // العلاقة مع الفئات الفرعية
     public function children()
     {
         return $this->hasMany(Category::class, 'parent_id');
     }
 
-    /**
-     * Get the products for the category.
-     */
+    // العلاقة مع المنتجات
     public function products()
     {
         return $this->hasMany(Product::class);
     }
 
-    /**
-     * Get the category name based on locale.
-     */
-    public function getNameAttribute()
+    // العلاقة مع الترجمات
+    public function translations()
     {
-        $locale = app()->getLocale();
-        $translation = $this->translations()->where('locale', $locale)->first();
-
-        return $translation ? $translation->name : '';
+        return $this->hasMany(CategoryTranslation::class);
     }
 
-    /**
-     * Get all parent categories.
-     */
-    public function getAllParents()
+    // الحصول على الترجمة
+    public function getTranslation($attribute, $locale = null)
     {
-        $parents = collect([]);
-        $parent = $this->parent;
-
-        while ($parent) {
-            $parents->push($parent);
-            $parent = $parent->parent;
-        }
-
-        return $parents->reverse();
+        $locale = $locale ?: app()->getLocale();
+        
+        return $this->translations()
+            ->where('locale', $locale)
+            ->value($attribute);
     }
 
-    /**
-     * Get all child categories recursively.
-     */
-    public function getAllChildren()
+    // نطاق للفئات النشطة فقط
+    public function scopeActive($query)
     {
-        $children = $this->children;
+        return $query->where('is_active', true);
+    }
 
-        foreach ($this->children as $child) {
-            $children = $children->merge($child->getAllChildren());
-        }
-
-        return $children;
+    // نطاق للفئات الرئيسية فقط
+    public function scopeParents($query)
+    {
+        return $query->whereNull('parent_id');
     }
 }

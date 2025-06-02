@@ -51,13 +51,8 @@
 
     <form wire:submit.prevent="addFeature">
         <div class="mb-3">
-            @foreach (config('app.locales') as $locale)
-                <label class="form-label">الميزة:</label>
-                <input type="text" wire:model="newNames.{{ $locale }}" id="name_{{ $locale }}" class="form-control" placeholder="{{ __('roles.enter_name_in') }} {{ __('roles.'.$locale) }}">
-                @error('newNames.'.$locale) <span class="error">{{ $message }}</span> @enderror
-            @endforeach
+            <x-translatable-input label="الميزة" field="newNames" required="true" help="أدخل اسم الميزة بكل لغة" />
         </div>
-
         <div class="mb-3">
             <label for="newIcon" class="form-label">الرمز</label>
             <input type="file" class="form-control-file" id="newIcon" wire:model="newIcon">

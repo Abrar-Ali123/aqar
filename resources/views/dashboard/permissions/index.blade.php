@@ -1,127 +1,194 @@
-@extends('dashboard.layouts.app')
+@extends('dashboard.layouts.master')
+
+@section('title', __('Permissions Management'))
 
 @section('content')
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-lg-12">
-            <div class="d-flex justify-content-between">
-                <h5 class="card-title mb-0">قائمة الصلاحيات</h5>
-                <a href="{{ route('admin.permissions.create') }}" class="btn btn-primary">
-                    <i class="ri-add-line align-middle"></i> إضافة صلاحية جديدة
-                </a>
-            </div>
-        </div>
-    </div>
-
     <div class="row">
-        <div class="col-lg-12">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">قائمة الصلاحيات</h5>
-                </div>
-                <div class="card-body">
-                    <table id="permissions-datatables" class="table table-bordered nowrap table-striped align-middle" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>الاسم</th>
-                                <th>الصفحات</th>
-                                <th>تاريخ الإنشاء</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($permissions as $index => $permission)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>
-                                        {{ $permission->translations->where('locale', 'ar')->first()->name ?? 'بدون اسم' }}
-                                    </td>
-                                    <td>
-                                        @php
-                                            $pages = json_decode($permission->pages, true);
-                                        @endphp
-                                        @if(is_array($pages))
-                                            @foreach($pages as $page)
-                                                <span class="badge bg-info">{{ $page }}</span>
-                                            @endforeach
-                                        @endif
-                                    </td>
-                                    <td>{{ $permission->created_at->format('Y-m-d') }}</td>
-                                    <td>
-                                        <div class="dropdown d-inline-block">
-                                            <button class="btn btn-subtle-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="ri-more-fill align-middle"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <a href="{{ route('admin.permissions.show', $permission->id) }}" class="dropdown-item">
-                                                        <i class="ri-eye-fill align-bottom me-2 text-muted"></i> عرض
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="{{ route('admin.permissions.edit', $permission->id) }}" class="dropdown-item">
-                                                        <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> تعديل
-                                                    </a>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form action="{{ route('admin.permissions.destroy', $permission->id) }}" method="POST" style="display: inline;" class="delete-form">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="dropdown-item text-danger">
-                                                            <i class="ri-delete-bin-fill align-bottom me-2"></i> حذف
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-
-                    <div class="d-flex justify-content-end mt-3">
-                        {{ $permissions->links() }}
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>{{ __('Permissions') }}</h4>
+                    <div>
+                        <a href="{{ route('admin.permission-categories.create') }}" class="btn btn-primary btn-sm">
+                            {{ __('New Category') }}
+                        </a>
+                        <a href="{{ route('admin.permissions.create') }}" class="btn btn-success btn-sm">
+                            {{ __('New Permission') }}
+                        </a>
                     </div>
+                </div>
+
+                <div class="card-body">
+                    @foreach($categories as $category)
+                        <div class="permission-category mb-4">
+                            <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded">
+                                <h5 class="mb-0">
+                                    {{ $category->translations[app()->getLocale()] ?? $category->name }}
+                                    <small class="text-muted">({{ $category->permissions->count() }})</small>
+                                </h5>
+                                <div class="btn-group">
+                                    <a href="{{ route('admin.permission-categories.edit', $category) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ route('admin.permission-categories.audit', $category) }}" 
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="permissions-list mt-3">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>{{ __('Name') }}</th>
+                                                <th>{{ __('Key') }}</th>
+                                                <th>{{ __('Description') }}</th>
+                                                <th>{{ __('Actions') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($category->permissions as $permission)
+                                                <tr>
+                                                    <td>
+                                                        {{ $permission->translations[app()->getLocale()] ?? $permission->name }}
+                                                    </td>
+                                                    <td><code>{{ $permission->name }}</code></td>
+                                                    <td>{{ $permission->description }}</td>
+                                                    <td>
+                                                        <div class="btn-group">
+                                                            <a href="{{ route('admin.permissions.edit', $permission) }}" 
+                                                               class="btn btn-sm btn-outline-primary">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                            <a href="{{ route('admin.permissions.audit', $permission) }}" 
+                                                               class="btn btn-sm btn-outline-info">
+                                                                <i class="fas fa-history"></i>
+                                                            </a>
+                                                            <form action="{{ route('admin.permissions.destroy', $permission) }}" 
+                                                                  method="POST" 
+                                                                  class="d-inline">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" 
+                                                                        class="btn btn-sm btn-outline-danger" 
+                                                                        onclick="return confirm('{{ __('Are you sure?') }}')">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            @if($category->children->count() > 0)
+                                <div class="subcategories mt-3 ml-4">
+                                    @foreach($category->children as $child)
+                                        <div class="permission-category mb-3">
+                                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                                <h6 class="mb-0">
+                                                    {{ $child->translations[app()->getLocale()] ?? $child->name }}
+                                                    <small class="text-muted">({{ $child->permissions->count() }})</small>
+                                                </h6>
+                                                <div class="btn-group">
+                                                    <a href="{{ route('admin.permission-categories.edit', $child) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <div class="permissions-list mt-2">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <tbody>
+                                                            @foreach($child->permissions as $permission)
+                                                                <tr>
+                                                                    <td>
+                                                                        {{ $permission->translations[app()->getLocale()] ?? $permission->name }}
+                                                                    </td>
+                                                                    <td><code>{{ $permission->name }}</code></td>
+                                                                    <td>{{ $permission->description }}</td>
+                                                                    <td>
+                                                                        <div class="btn-group">
+                                                                            <a href="{{ route('admin.permissions.edit', $permission) }}" 
+                                                                               class="btn btn-sm btn-outline-primary">
+                                                                                <i class="fas fa-edit"></i>
+                                                                            </a>
+                                                                            <form action="{{ route('admin.permissions.destroy', $permission) }}" 
+                                                                                  method="POST" 
+                                                                                  class="d-inline">
+                                                                                @csrf
+                                                                                @method('DELETE')
+                                                                                <button type="submit" 
+                                                                                        class="btn btn-sm btn-outline-danger" 
+                                                                                        onclick="return confirm('{{ __('Are you sure?') }}')">
+                                                                                    <i class="fas fa-trash"></i>
+                                                                                </button>
+                                                                            </form>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
             </div>
         </div>
     </div>
 </div>
-@endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     $(document).ready(function() {
-        $('#permissions-datatables').DataTable({
-            responsive: true,
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/ar.json',
-            },
-            "order": [[ 0, "desc" ]],
-        });
+        // Enable tooltips
+        $('[data-toggle="tooltip"]').tooltip();
 
-        $('.delete-form').on('submit', function(e) {
-            e.preventDefault();
-            var form = this;
+        // Enable drag and drop for categories
+        new Sortable(document.querySelector('.permission-category'), {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: function(evt) {
+                let categories = [];
+                $('.permission-category').each(function(index) {
+                    categories.push({
+                        id: $(this).data('id'),
+                        order: index
+                    });
+                });
 
-            Swal.fire({
-                title: 'هل أنت متأكد؟',
-                text: "لن تتمكن من التراجع عن هذا الإجراء!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'نعم، قم بالحذف!',
-                cancelButtonText: 'إلغاء'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
+                // Update order via AJAX
+                $.ajax({
+                    url: '{{ route("admin.permission-categories.reorder") }}',
+                    method: 'POST',
+                    data: {
+                        categories: categories,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        toastr.success(response.message);
+                    },
+                    error: function(xhr) {
+                        toastr.error(xhr.responseJSON.message);
+                    }
+                });
+            }
         });
     });
 </script>
-@endsection
+@endpush

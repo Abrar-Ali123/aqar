@@ -1,0 +1,14 @@
+.flag-icon {
+    display: inline-block;
+    background-size: contain;
+    background-position: 50%;
+    background-repeat: no-repeat;
+}
+
+.flag-icon-sa {
+    background-image: url(../images/flags/sa.svg);
+}
+
+.flag-icon-us {
+    background-image: url(../images/flags/us.svg);
+}

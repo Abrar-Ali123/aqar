@@ -1,87 +1,76 @@
-@extends('dashboard.layouts.app')
-
+@extends('layouts.app')
 @section('content')
-    <div class="container-fluid">
-        <div class="row mb-4">
-            <div class="col-lg-12">
-                <div class="d-flex justify-content-between">
-                    <h5 class="card-title mb-0">قائمة المنشآت</h5>
-                    <a href="{{ route('facilities.create') }}" class="btn btn-primary">
-                        <i class="ri-add-line align-middle"></i> إضافة منشأة جديدة
-                    </a>
-                </div>
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">قائمة المنشآت</h5>
-                    </div>
-                    <div class="card-body">
-                        <table id="model-datatables" class="table table-bordered nowrap table-striped align-middle"
-                            style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>الاسم (عربي)</th>
-                                    <th>الاسم (إنجليزي)</th>
-                                    <th>البريد الإلكتروني</th>
-                                    <th>الحالة</th>
-                                    <th>تاريخ الإنشاء</th>
-                                    <th>الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($facilities as $index => $facility)
-                                    <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>{{ $facility->translations['ar']['name'] }}</td>
-                                        <td>{{ $facility->translations['en']['name'] }}</td>
-                                        <td>{{ $facility->email }}</td>
-                                        <td>
-                                            @if($facility->is_active)
-                                                <span class="badge bg-success">نشط</span>
-                                            @else
-                                                <span class="badge bg-danger">غير نشط</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $facility->created_at->format('Y-m-d') }}</td>
-                                        <td>
-                                            <div class="dropdown d-inline-block">
-                                                <button class="btn btn-subtle-secondary btn-sm dropdown" type="button"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <i class="ri-more-fill align-middle"></i>
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end">
-                                                    <li>
-                                                        <a href="{{ route('facilities.edit', $facility->id) }}"
-                                                            class="dropdown-item">
-                                                            <i class="ri-pencil-fill align-bottom me-2 text-muted"></i>
-                                                            تعديل
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <form action="{{ route('facilities.destroy', $facility->id) }}"
-                                                            method="POST" style="display: inline;">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="dropdown-item text-danger">
-                                                                <i class="ri-delete-bin-fill align-bottom me-2"></i> حذف
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto text-center">
+            <h2 class="section-title">المنشآت المتاحة</h2>
+            <p class="text-muted">اكتشف أفضل المنشآت وتصفح منتجاتهم وخدماتهم</p>
         </div>
     </div>
+
+    <!-- عرض المنشآت -->
+    <x-facilities-list 
+        :facilities="$facilities"
+        :view="'grid'"
+    />
+    
+
+    <!-- الترقيم -->
+    <div class="d-flex justify-content-center mt-4">
+        {{ $facilities->links() }}
+    </div>
+</div>
+
+<style>
+.section-title {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 3px;
+    background-color: var(--bs-primary);
+}
+
+.facility-logo {
+    margin-top: -50px;
+    text-align: center;
+}
+
+.facility-logo img,
+.placeholder-logo {
+    width: 80px;
+    height: 80px;
+    border: 4px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.facility-stats {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+.facility-stats i {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+</style>
 @endsection

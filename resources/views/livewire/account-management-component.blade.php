@@ -38,18 +38,21 @@
     <div id="registerForm" style="display: none;">
         <form id="nameForm" method="POST">
             <label>أدخل اسمك بلغات مختلفة:</label>
-            @foreach (config('app.locales') as $locale)
+            @php
+                $languages = \App\Models\Language::where('is_active', true)->orderBy('order')->get();
+            @endphp
+            @foreach ($languages as $language)
                 <div>
-                    <label for="name_{{ $locale }}">Name ({{ $locale }}):</label>
-                    <input type="text" class="user_names" id="name_{{ $locale }}"
-                        data-locale="{{ $locale }}" wire:model="translations.{{ $locale }}" required>
-                    @error('translations.' . $locale)
+                    <label for="name_{{ $language->code }}">{{ $language->name }}:</label>
+                    <input type="text" class="user_names" id="name_{{ $language->code }}"
+                        data-locale="{{ $language->code }}" wire:model="translations.{{ $language->code }}" required>
+                    @error('translations.' . $language->code)
                         <span class="error">{{ $message }}</span>
                     @enderror
                 </div>
             @endforeach
 
-            <button type="button" onclick="submitName()">إرسال</button>
+            <button type="button" wire:click="loginOrRegister">إرسال</button>
         </form>
     </div>
 
@@ -156,39 +159,6 @@
                 $('#sentError').text("Please send the verification code first.").show();
             }
         });
-
-
-        function submitName() {
-            // إنشاء كائن `names` بحيث يحتوي على كل لغة (locale) مع النص المدخل
-            let names = {};
-            $('.user_names').each(function() {
-                let locale = $(this).data('locale'); // الحصول على اللغة من `data-locale`
-                let name = $(this).val(); // الحصول على النص المدخل
-                names[locale] = name; // إضافة اللغة والنص المدخل كزوج key-value
-            });
-
-            $.ajax({
-                url: "{{ route('login.loginOrRegister') }}",
-                method: "POST",
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'Content-Type': 'application/json' // تعيين نوع المحتوى إلى JSON
-                },
-                data: JSON.stringify({
-                    phone_number: $('#numbers').val(),
-                    countryCode: $('#country_code').val(),
-                    names: names // إرسال names ككائن {locale: name, ...}
-                }),
-                success: function(res) {
-                    if (res.status === 'registered') {
-                        window.location.href = "/dashboard";
-                    }
-                },
-                error: function(xhr) {
-                    $('#sentError').text("حدث خطأ: " + xhr.responseText).show();
-                }
-            });
-        }
     </script>
 
 

@@ -2,129 +2,273 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Bank;
-use App\Models\Facility;
 use App\Models\Loan;
-use App\Models\LoanTranslation;
+use App\Models\Status;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-class LoanController extends Controller
+class LoanController extends TranslatableController
 {
+    protected $translatableFields = [
+        'purpose' => ['required', 'string'],
+        'notes' => ['nullable', 'string'],
+        'rejection_reason' => ['nullable', 'string'],
+    ];
+
     public function index()
     {
-        $loans = Loan::with(['bank', 'facility'])->get();
+        if (!Auth::user()->can('view loans')) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
+        }
 
-        return view('loans.index', compact('loans'));
+        $query = Loan::with(['user', 'status.translations']);
+
+        // Filter by user if not admin
+        if (!Auth::user()->hasRole('admin')) {
+            $query->where('user_id', Auth::id());
+        }
+
+        $loans = $query->latest()->paginate(15);
+        return view('admin.loans.index', compact('loans'));
     }
 
     public function create()
     {
-        $banks = Bank::all();
+        if (!Auth::user()->can('create loans')) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
+        }
 
-        return view('loans.create', compact('banks'));
+        $languages = $this->getLanguages();
+        return view('admin.loans.create', compact('languages'));
     }
 
     public function store(Request $request)
     {
-        // إنشاء قرض جديد وربط المنشأة والمستخدم والبيانات الأساسية
-        $loan = new Loan;
-        $loan->facility_id = $request->facility_id; // تحديد المنشأة
-        $loan->applicant = auth()->id();
-        $loan->birth = $request->birth;
-        $loan->salary = $request->salary;
-        $loan->commitments = $request->commitments;
-        $loan->military = $request->military;
-        $loan->rank = $request->rank;
-        $loan->employment = $request->employment;
-        $loan->bank_id = $request->bank_id;
-        $loan->updated_by = auth()->id(); // حفظ المستخدم الذي قام بالإنشاء
-        $loan->save();
-
-        // حفظ الترجمة لحقل agency حسب اللغة
-        if ($request->has('translations')) {
-            foreach ($request->input('translations') as $locale => $translationData) {
-                $translations[] = [
-                    'loan_id' => $loan->id,
-                    'locale' => $locale,
-                    'agency' => $translationData['agency'],
-                ];
-            }
-
-            LoanTranslation::insert($translations);
+        if (!Auth::user()->can('create loans')) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
         }
 
-        return redirect()->route('loans.index')->with('success', 'تم تقديم الطلب بنجاح.');
-    }
-
-    public function edit($id)
-    {
-        $loan = Loan::findOrFail($id);
-
-        return response()->json([
-            'id' => $loan->id,
-            'applicant' => $loan->applicant,
-            'birth' => $loan->birth,
-            'salary' => $loan->salary,
-            'commitments' => $loan->commitments,
-            'military' => $loan->military,
-            'rank' => $loan->rank,
-            'employment' => $loan->employment,
-            'bank_id' => $loan->bank_id,
-            'facility_id' => $loan->facility_id,
-            'agency' => $loan->translate(app()->getLocale())->agency ?? '',
+        $request->validate([
+            'amount' => 'required|numeric|min:1000|max:1000000',
+            'duration_months' => 'required|integer|min:6|max:240',
+            'monthly_income' => 'required|numeric|min:0',
+            'employment_type' => 'required|string|in:full-time,part-time,self-employed,retired',
+            'employer_name' => 'required|string|max:255',
+            'employment_duration_years' => 'required|numeric|min:0',
+            'has_existing_loans' => 'required|boolean',
+            'existing_loans_monthly_payment' => 'required_if:has_existing_loans,true|nullable|numeric|min:0',
+            'attachments.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
-    }
 
-    public function update(Request $request, $id)
-    {
         try {
-            $loan = Loan::findOrFail($id);
+            $loan = Loan::create([
+                'user_id' => Auth::id(),
+                'amount' => $request->amount,
+                'duration_months' => $request->duration_months,
+                'monthly_income' => $request->monthly_income,
+                'employment_type' => $request->employment_type,
+                'employer_name' => $request->employer_name,
+                'employment_duration_years' => $request->employment_duration_years,
+                'has_existing_loans' => $request->boolean('has_existing_loans'),
+                'existing_loans_monthly_payment' => $request->existing_loans_monthly_payment,
+                'status_id' => Status::where('type', 'loan')
+                    ->where('is_default', true)
+                    ->first()
+                    ->id,
+            ]);
 
-            // تحديث بيانات القرض الأساسية
-            $loan->applicant = $request->applicant;
-            $loan->birth = $request->birth;
-            $loan->salary = $request->salary;
-            $loan->commitments = $request->commitments;
-            $loan->military = $request->military;
-            $loan->rank = $request->rank;
-            $loan->employment = $request->employment;
-            $loan->bank_id = $request->bank_id;
-            $loan->facility_id = $request->facility_id; // تحديد المنشأة
-            $loan->updated_by = auth()->id(); // تحديث المستخدم الذي قام بالتعديل
-            $loan->save();
-
-            // تحديث الترجمة لحقل agency حسب اللغة الحالية فقط
-            $locale = app()->getLocale();
-            if ($request->has('agency')) {
-                $loan->translateOrNew($locale)->agency = $request->agency;
-                $loan->save();
+            // Handle attachments
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('loans/attachments', 'public');
+                    $loan->attachments()->create([
+                        'path' => $path,
+                        'name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                    ]);
+                }
             }
 
-            return response()->json([
-                'id' => $loan->id,
-                'agency' => $loan->translate($locale)->agency,
-                'birth' => $loan->birth,
-                'salary' => $loan->salary,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error updating loan: '.$e->getMessage());
+            $this->handleTranslations($loan, $request, array_keys($this->translatableFields));
 
-            return response()->json(['error' => 'حدث خطأ أثناء تحديث البيانات.'], 500);
+            return redirect()->route('admin.loans.index')
+                ->with('success', __('messages.loan_created_successfully'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', __('messages.loan_create_error') . ': ' . $e->getMessage())
+                ->withInput();
         }
     }
 
-    public function destroy($id)
+    public function show(Loan $loan)
     {
-        Loan::destroy($id);
+        if (!Auth::user()->can('view loans') || 
+            (!Auth::user()->hasRole('admin') && $loan->user_id !== Auth::id())) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
+        }
 
-        return response()->json(['status' => 'success']);
+        $loan->load(['user', 'status.translations', 'attachments']);
+        $translations = $this->prepareTranslations($loan, array_keys($this->translatableFields));
+        return view('admin.loans.show', compact('loan', 'translations'));
     }
 
-    public function facilityLoans($facilityId)
+    public function edit(Loan $loan)
     {
-        $facility = Facility::findOrFail($facilityId);
-        $loans = Loan::where('facility_id', $facility->id)->with('bank')->get();
+        if (!Auth::user()->can('edit loans') || 
+            (!Auth::user()->hasRole('admin') && $loan->user_id !== Auth::id())) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
+        }
 
-        return view('loans.facility_loans', compact('loans', 'facility'));
+        $statuses = Status::with('translations')
+            ->where('type', 'loan')
+            ->where('is_active', true)
+            ->get();
+        $languages = $this->getLanguages();
+        $translations = $this->prepareTranslations($loan, array_keys($this->translatableFields));
+        
+        return view('admin.loans.edit', compact('loan', 'statuses', 'languages', 'translations'));
+    }
+
+    public function update(Request $request, Loan $loan)
+    {
+        if (!Auth::user()->can('edit loans') || 
+            (!Auth::user()->hasRole('admin') && $loan->user_id !== Auth::id())) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:1000|max:1000000',
+            'duration_months' => 'required|integer|min:6|max:240',
+            'monthly_income' => 'required|numeric|min:0',
+            'employment_type' => 'required|string|in:full-time,part-time,self-employed,retired',
+            'employer_name' => 'required|string|max:255',
+            'employment_duration_years' => 'required|numeric|min:0',
+            'has_existing_loans' => 'required|boolean',
+            'existing_loans_monthly_payment' => 'required_if:has_existing_loans,true|nullable|numeric|min:0',
+            'status_id' => 'required|exists:statuses,id',
+            'attachments.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ]);
+
+        try {
+            $loan->update([
+                'amount' => $request->amount,
+                'duration_months' => $request->duration_months,
+                'monthly_income' => $request->monthly_income,
+                'employment_type' => $request->employment_type,
+                'employer_name' => $request->employer_name,
+                'employment_duration_years' => $request->employment_duration_years,
+                'has_existing_loans' => $request->boolean('has_existing_loans'),
+                'existing_loans_monthly_payment' => $request->existing_loans_monthly_payment,
+                'status_id' => $request->status_id,
+            ]);
+
+            // Handle attachments
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('loans/attachments', 'public');
+                    $loan->attachments()->create([
+                        'path' => $path,
+                        'name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                    ]);
+                }
+            }
+
+            $this->handleTranslations($loan, $request, array_keys($this->translatableFields));
+
+            return redirect()->route('admin.loans.index')
+                ->with('success', __('messages.loan_updated_successfully'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', __('messages.loan_update_error') . ': ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    public function destroy(Loan $loan)
+    {
+        if (!Auth::user()->can('delete loans') || 
+            (!Auth::user()->hasRole('admin') && $loan->user_id !== Auth::id())) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
+        }
+
+        try {
+            // Delete attachments
+            foreach ($loan->attachments as $attachment) {
+                Storage::disk('public')->delete($attachment->path);
+                $attachment->delete();
+            }
+
+            $loan->delete();
+
+            return redirect()->route('admin.loans.index')
+                ->with('success', __('messages.loan_deleted_successfully'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', __('messages.loan_delete_error') . ': ' . $e->getMessage());
+        }
+    }
+
+    public function approve(Loan $loan)
+    {
+        if (!Auth::user()->can('edit loans') || !Auth::user()->hasRole('admin')) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
+        }
+
+        try {
+            $approvedStatus = Status::where('type', 'loan')
+                ->where('name->en', 'Approved')
+                ->firstOrFail();
+
+            $loan->update([
+                'status_id' => $approvedStatus->id,
+                'approved_at' => now(),
+                'approved_by' => Auth::id(),
+            ]);
+
+            return redirect()->route('admin.loans.index')
+                ->with('success', __('messages.loan_approved_successfully'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', __('messages.loan_approve_error') . ': ' . $e->getMessage());
+        }
+    }
+
+    public function reject(Request $request, Loan $loan)
+    {
+        if (!Auth::user()->can('edit loans') || !Auth::user()->hasRole('admin')) {
+            return redirect()->back()
+                ->with('error', __('messages.unauthorized_action'));
+        }
+
+        try {
+            $rejectedStatus = Status::where('type', 'loan')
+                ->where('name->en', 'Rejected')
+                ->firstOrFail();
+
+            $loan->update([
+                'status_id' => $rejectedStatus->id,
+                'rejected_at' => now(),
+                'rejected_by' => Auth::id(),
+            ]);
+
+            $this->handleTranslations($loan, $request, ['rejection_reason']);
+
+            return redirect()->route('admin.loans.index')
+                ->with('success', __('messages.loan_rejected_successfully'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', __('messages.loan_reject_error') . ': ' . $e->getMessage());
+        }
     }
 }

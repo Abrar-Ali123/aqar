@@ -124,17 +124,12 @@
 
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="property_type" class="form-label">نوع العقار</label>
-                                        <select name="property_type" class="form-select" id="property_type" required>
-                                            <option value="">اختر نوع العقار</option>
-                                            <option value="apt" {{ old('property_type', $product->property_type) == 'apt' ? 'selected' : '' }}>شقة</option>
-                                            <option value="vil" {{ old('property_type', $product->property_type) == 'vil' ? 'selected' : '' }}>فيلا</option>
-                                            <option value="land" {{ old('property_type', $product->property_type) == 'land' ? 'selected' : '' }}>أرض</option>
-                                            <option value="com" {{ old('property_type', $product->property_type) == 'com' ? 'selected' : '' }}>تجاري</option>
+                                        <label for="type">نوع المنتج</label>
+                                        <select name="type" id="type" class="form-control" required>
+                                            @foreach($allTypes as $type)
+                                                <option value="{{ $type['key'] }}" @if($product->type->value == $type['key']) selected @endif>{{ $type['label'] }}</option>
+                                            @endforeach
                                         </select>
-                                        @error('property_type')
-                                            <div class="text-danger">{{ $message }}</div>
-                                        @enderror
                                     </div>
                                 </div>
 

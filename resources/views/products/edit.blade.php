@@ -1,376 +1,296 @@
 @extends('dashboard.layouts.app1')
 
 @section('content')
-<form action="{{ route('products.update', $product->id) }}" dir="rtl" method="POST" enctype="multipart/form-data">
-    @csrf
-    @method('PUT')
 
-    <div class="header">تعديل بيانات المنتج الأساسية</div>
-    <div class="content">
-        {{-- الحقول الأساسية --}}
-        <label for="is_active">الحالة:</label>
-        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" {{ $product->is_active || old('is_active', $product->is_active) ? 'checked' : '' }}>
-        <br><br>
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">تعديل المنتج</h3>
+        </div>
+        
+        <div class="card-body">
+            <form action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
 
-        <label for="price">السعر:</label>
-        <input type="number" class="form-control" id="price" name="price" value="{{ old('price', $product->price) }}" required>
-        <br>
+                <!-- نوع المنتج -->
+                <div class="form-group mb-3">
+                    <label for="type">نوع المنتج <span class="text-danger">*</span></label>
+                    <select name="type" id="type" class="form-control @error('type') is-invalid @enderror" required>
+                        <option value="">اختر النوع</option>
+                        <option value="property" {{ old('type', $product->type) == 'property' ? 'selected' : '' }}>عقار</option>
+                        <option value="service" {{ old('type', $product->type) == 'service' ? 'selected' : '' }}>خدمة</option>
+                        <option value="product" {{ old('type', $product->type) == 'product' ? 'selected' : '' }}>منتج</option>
+                    </select>
+                    @error('type')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
 
+                <!-- معلومات المنتج -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        المعلومات الأساسية
+                    </div>
+                    <div class="card-body">
+                        <x-translatable-field 
+                            name="name" 
+                            label="الاسم"
+                            :languages="$languages"
+                            :translations="$product->translations"
+                            required
+                        />
 
-        <label for="room">عدد الغرف:</label>
-        <input type="number" class="form-control" id="room" name="room" value="{{ old('room', $product->room) }}" required>
-        <br>
+                        <x-translatable-field 
+                            name="description" 
+                            label="الوصف"
+                            type="textarea"
+                            :languages="$languages"
+                            :translations="$product->translations"
+                        />
+                    </div>
+                </div>
 
-        <label for="bathroom">عدد الحمامات:</label>
-        <input type="number" class="form-control" id="bathroom" name="bathroom" value="{{ old('bathroom', $product->bathroom) }}" required>
-        <br>
+                <!-- معلومات إضافية -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="price">السعر <span class="text-danger">*</span></label>
+                            <input type="number" name="price" id="price" class="form-control @error('price') is-invalid @enderror" value="{{ old('price', $product->price) }}" required step="0.01">
+                            @error('price')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
 
-        <label for="Space">المساحة:</label>
-        <input type="text" class="form-control" id="Space" name="Space" value="{{ old('Space', $product->Space) }}" required>
-        <br>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="category_id">الفئة <span class="text-danger">*</span></label>
+                            <select name="category_id" id="category_id" class="form-control @error('category_id') is-invalid @enderror" required>
+                                <option value="">اختر الفئة</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('category_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
 
-        @foreach (config('app.locales') as $locale)
-            @php
-                $translation = $product->translations->firstWhere('locale', $locale);
-            @endphp
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="facility_id">المنشأة</label>
+                            <select name="facility_id" id="facility_id" class="form-control @error('facility_id') is-invalid @enderror">
+                                <option value="">اختر المنشأة</option>
+                                @foreach($facilities as $facility)
+                                    <option value="{{ $facility->id }}" {{ old('facility_id', $product->facility_id) == $facility->id ? 'selected' : '' }}>
+                                        {{ $facility->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('facility_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
 
-            <label>اسم العقار:</label>
-            <input type="text" class="form-control" id="name_{{ $locale }}" name="translations[{{ $locale }}][name]" value="{{ old('translations.'.$locale.'.name', $translation->name ?? '') }}" required>
-            <br>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="seller_user_id">البائع</label>
+                            <select name="seller_user_id" id="seller_user_id" class="form-control @error('seller_user_id') is-invalid @enderror">
+                                <option value="">اختر البائع</option>
+                                @foreach($sellers as $seller)
+                                    <option value="{{ $seller->id }}" {{ old('seller_user_id', $product->seller_user_id) == $seller->id ? 'selected' : '' }}>
+                                        {{ $seller->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('seller_user_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
 
-            <label>وصف العقار :</label>
+                <!-- الصور والوسائط -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        الصور والوسائط
+                    </div>
+                    <div class="card-body">
+                        <!-- عرض الصور الحالية -->
+                        @if($product->images->count() > 0)
+                            <div class="row mb-3">
+                                @foreach($product->images as $image)
+                                    <div class="col-md-3 mb-3">
+                                        <div class="position-relative">
+                                            <img src="{{ $image->url }}" class="img-thumbnail" alt="صورة المنتج">
+                                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 delete-image" data-image-id="{{ $image->id }}">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
 
+                        <div class="form-group mb-3">
+                            <label for="images">إضافة صور جديدة</label>
+                            <input type="file" name="images[]" id="images" class="form-control @error('images.*') is-invalid @enderror" multiple accept="image/*">
+                            <small class="form-text text-muted">يمكنك اختيار عدة صور في نفس الوقت</small>
+                            @error('images.*')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
 
+                <!-- معلومات الموقع -->
+                <div class="card mb-3" id="location-info" style="display: {{ $product->type === 'property' ? 'block' : 'none' }};">
+                    <div class="card-header">
+                        معلومات الموقع
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <x-translatable-field 
+                                    name="address" 
+                                    label="العنوان"
+                                    :languages="$languages"
+                                    :translations="$product->translations"
+                                />
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="location">الموقع على الخريطة</label>
+                                    <div id="map" style="height: 300px;"></div>
+                                    <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude', $product->latitude) }}">
+                                    <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude', $product->longitude) }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- الخصائص -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        الخصائص
+                    </div>
+                    <div class="card-body">
+                        <div id="attributes-container">
+                            @foreach($attributes as $attribute)
+                                <div class="form-group mb-3 attribute-field" data-categories="{{ json_encode($attribute->categories->pluck('id')) }}" style="{{ $attribute->categories->contains($product->category_id) ? 'display: block;' : 'display: none;' }}">
+                                    <label for="attribute_{{ $attribute->id }}">{{ $attribute->name }}</label>
+                                    @switch($attribute->type)
+                                        @case('text')
+                                            <input type="text" name="attributes[{{ $attribute->id }}]" id="attribute_{{ $attribute->id }}" class="form-control" value="{{ $product->getAttributeValue($attribute->id) }}">
+                                            @break
+                                        @case('number')
+                                            <input type="number" name="attributes[{{ $attribute->id }}]" id="attribute_{{ $attribute->id }}" class="form-control" value="{{ $product->getAttributeValue($attribute->id) }}">
+                                            @break
+                                        @case('boolean')
+                                            <select name="attributes[{{ $attribute->id }}]" id="attribute_{{ $attribute->id }}" class="form-control">
+                                                <option value="">اختر</option>
+                                                <option value="1" {{ $product->getAttributeValue($attribute->id) === true ? 'selected' : '' }}>نعم</option>
+                                                <option value="0" {{ $product->getAttributeValue($attribute->id) === false ? 'selected' : '' }}>لا</option>
+                                            </select>
+                                            @break
+                                        @case('date')
+                                            <input type="date" name="attributes[{{ $attribute->id }}]" id="attribute_{{ $attribute->id }}" class="form-control" value="{{ $product->getAttributeValue($attribute->id) }}">
+                                            @break
+                                    @endswitch
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
 
-  <!-- Rich Text Editor Container -->
- <div class="form-group">
-  <!-- Rich Text Tools -->
-  <div id="editor-toolbar" class="editor-toolbar">
-  <div id="editor-toolbar" class="editor-toolbar" style="margin-bottom: 10px;"> <!-- زيادة المسافة بين الأدوات ومربع النص -->
-    <button type="button" onclick="execCmd('bold')"><i class="fas fa-bold"></i></button>
-    <button type="button" onclick="execCmd('italic')"><i class="fas fa-italic"></i></button>
-    <button type="button" onclick="execCmd('underline')"><i class="fas fa-underline"></i></button>
-    <!-- أضف هنا الأدوات الإضافية -->
-    <!-- مثال للأدوات الإضافية -->
-    <button type="button" onclick="execCmd('justifyLeft')"><i class="fas fa-align-left"></i></button>
-    <button type="button" onclick="execCmd('justifyCenter')"><i class="fas fa-align-center"></i></button>
-    <button type="button" onclick="execCmd('justifyRight')"><i class="fas fa-align-right"></i></button>
-    <button type="button" onclick="execCmd('justifyFull')"><i class="fas fa-align-justify"></i></button>
-    <button type="button" onclick="execCmd('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
-    <button type="button" onclick="execCmd('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
-    <button type="button" onclick="execCmd('cut')"><i class="fas fa-cut"></i></button>
-    <button type="button" onclick="execCmd('copy')"><i class="fas fa-copy"></i></button>
-    <button type="button" onclick="execCmd('paste')"><i class="fas fa-paste"></i></button>
-    <button type="button" onclick="execCmd('undo')"><i class="fas fa-undo-alt"></i></button>
-    <button type="button" onclick="execCmd('redo')"><i class="fas fa-redo-alt"></i></button>
+                <div class="form-group mb-3">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" name="is_active" class="custom-control-input" id="is_active" {{ old('is_active', $product->is_active) ? 'checked' : '' }}>
+                        <label class="custom-control-label" for="is_active">تفعيل المنتج</label>
+                    </div>
+                </div>
 
-    <div class="form-control rich-text-editor" contenteditable="true" id="description_{{ $locale }}" style="min-height: 100px;" placeholder="{{ __('facility.enter_facility_description', ['locale' => strtoupper($locale)]) }}">{!! $product->description !!}</div>
-
-  </div>
-
-  <!-- Content Editable Div -->
-  <style>
-    .rich-text-editor {
-        width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-
-
-    }
-
-</style>
-
-
-  <!-- Hidden Input Field to Store Data -->
-  <input type="hidden" id="hidden_description_{{ $locale }}" name="translations[{{ $locale }}][description]">
-
-  <!-- Save Button -->
-</div>
-
-<!-- JavaScript to handle the Rich Text Editor Commands and Save Action -->
-<script>
-  // Function to execute command from the tools
-  function execCmd(command) {
-    document.execCommand(command, false, null);
-    // Update hidden input with contenteditable div's content after change
-    document.getElementById('hidden_description_{{ $locale }}').value = document.getElementById('description_{{ $locale }}').innerHTML;
-  }
-
-  // Function to save content into the hidden input field
-  function saveContent() {
-    var content = document.getElementById('description_{{ $locale }}').innerHTML;
-    document.getElementById('hidden_description_{{ $locale }}').value = content;
-  }
-
-  // Event listener to update hidden input whenever the content changes
-  document.getElementById('description_{{ $locale }}').addEventListener('input', function() {
-    document.getElementById('hidden_description_{{ $locale }}').value = this.innerHTML;
-  });
-</script>
-
-
-
-                @endforeach
-
-
-<!-- حقل رفع الصور لمعرض الصور -->
-<input type="file" multiple id="imageInput" name="image_gallery[]" class="neomorphic p-2">
-<div id="imageDisplay">
-    <!-- هنا نعرض الصور الحالية لمعرض الصور -->
-    @if(isset($product->image_gallery))
-        @php
-            $galleryImages = explode(',', $product->image_gallery); // أفترض أن image_gallery هو سلسلة نصية من الصور مفصولة بفواصل
-        @endphp
-        @foreach($galleryImages as $galleryImage)
-            <span class="image-container">
-            <img src="{{ Storage::url($galleryImage) }}" style="height: 100px; margin: 10px;">
-                <!-- حقل مخفي لتحديد الصور التي يريد المستخدم حذفها -->
-                <input type="checkbox" name="delete_images[]" value="{{ $galleryImage }}" class="imgCheckbox">
-            </span>
-        @endforeach
-    @endif
-</div>
-
-<button type="button" id="deleteSelected">حذف المحدد</button>
-
-<button type="button" id="showAlbum">عرض الألبوم</button>
-
-<!-- نافذة منبثقة لمعاينة الألبوم -->
-<div id="albumModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <div id="albumImages"></div>
-        <button type="button" id="prevImage">السابق</button>
-        <button type="button" id="nextImage">التالي</button>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                    <a href="{{ route('products.index') }}" class="btn btn-secondary">إلغاء</a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<style>
-    /* أنماط النافذة المنبثقة */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgb(0,0,0);
-        background-color: rgba(0,0,0,0.4);
-    }
-
-    .modal-content {
-        background-color: #fefefe;
-        margin: 15% auto;
-        padding: 20px;
-        border: 1px solid #888;
-        width: 80%;
-    }
-
-    .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-    }
-
-    .close:hover,
-    .close:focus {
-        color: black;
-        text-decoration: none;
-        cursor: pointer;
-    }
-
-    #imageDisplay img {
-        margin: 5px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 5px;
-    }
-
-    #imageDisplay span {
-        display: inline-block;
-        position: relative;
-    }
-
-    .imgCheckbox {
-        position: absolute;
-        top: 5px;
-        left: 5px;
-    }
-
-    #albumImages img {
-        display: none;
-        max-width: 90%;
-        max-height: 90%;
-        margin: auto;
-        display: block;
-    }
-</style>
-
+@push('scripts')
 <script>
-    // البرمجة النصية للنافذة المنبثقة والألبوم
-    var modal = document.getElementById('albumModal');
-    var span = document.getElementsByClassName('close')[0];
-    var currentIndex = 0;
-
-    document.getElementById('imageInput').addEventListener('change', function(event) {
-        var imageContainer = document.getElementById('imageDisplay');
-        imageContainer.innerHTML = '';
-
-        var files = event.target.files;
-        for (var i = 0; i < files.length; i++) {
-            var file = files[i];
-
-            if (!file.type.match('image.*')) {
-                continue;
-            }
-
-            var reader = new FileReader();
-
-            reader.onload = (function(theFile) {
-                return function(e) {
-                    var span = document.createElement('span');
-                    span.innerHTML = '<img src="' + e.target.result +
-                                     '" title="' + escape(theFile.name) +
-                                     '" style="height: 100px; margin: 10px"/><input type="checkbox" class="imgCheckbox">';
-                    imageContainer.appendChild(span);
-                };
-            })(file);
-
-            reader.readAsDataURL(file);
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    // إظهار/إخفاء حقول الموقع حسب نوع المنتج
+    const typeSelect = document.getElementById('type');
+    const locationInfo = document.getElementById('location-info');
+    
+    typeSelect.addEventListener('change', function() {
+        locationInfo.style.display = this.value === 'property' ? 'block' : 'none';
     });
 
-    document.getElementById('deleteSelected').addEventListener('click', function() {
-        var checkboxes = document.getElementsByClassName('imgCheckbox');
-        for (var i = checkboxes.length - 1; i >= 0; i--) {
-            if (checkboxes[i].checked) {
-                checkboxes[i].parentNode.remove();
-            }
-        }
-    });
-
-    document.getElementById('showAlbum').onclick = function() {
-        modal.style.display = 'block';
-        var images = document.querySelectorAll('#imageDisplay img');
-        var albumImages = document.getElementById('albumImages');
-        albumImages.innerHTML = '';
-        images.forEach(function(img, index) {
-            var imgClone = img.cloneNode();
-            imgClone.style.display = index === 0 ? 'block' : 'none'; // Show only the first image initially
-            albumImages.appendChild(imgClone);
+    // إظهار/إخفاء الخصائص حسب الفئة
+    const categorySelect = document.getElementById('category_id');
+    const attributeFields = document.querySelectorAll('.attribute-field');
+    
+    categorySelect.addEventListener('change', function() {
+        const selectedCategoryId = parseInt(this.value);
+        
+        attributeFields.forEach(field => {
+            const categories = JSON.parse(field.dataset.categories);
+            field.style.display = categories.includes(selectedCategoryId) ? 'block' : 'none';
         });
-        currentIndex = 0; // Reset index on opening the album
-    }
-
-    span.onclick = function() {
-        modal.style.display = 'none';
-    }
-
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    document.getElementById('nextImage').addEventListener('click', function() {
-        var images = document.querySelectorAll('#albumImages img');
-        if (currentIndex < images.length - 1) {
-            images[currentIndex].style.display = 'none';
-            currentIndex++;
-            images[currentIndex].style.display = 'block';
-        }
     });
 
-    document.getElementById('prevImage').addEventListener('click', function() {
-        var images = document.querySelectorAll('#albumImages img'); // تعريف المتغير images داخل الدالة
+    // تهيئة الخريطة
+    if (document.getElementById('map')) {
+        const latitude = parseFloat(document.getElementById('latitude').value) || 24.7136;
+        const longitude = parseFloat(document.getElementById('longitude').value) || 46.6753;
+        
+        const map = L.map('map').setView([latitude, longitude], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        if (currentIndex > 0) {
-            images[currentIndex].style.display = 'none';
-            currentIndex--;
-            images[currentIndex].style.display = 'block';
-        }
+        let marker = L.marker([latitude, longitude]).addTo(map);
+        
+        map.on('click', function(e) {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker(e.latlng).addTo(map);
+            document.getElementById('latitude').value = e.latlng.lat;
+            document.getElementById('longitude').value = e.latlng.lng;
+        });
+    }
+
+    // حذف الصور
+    document.querySelectorAll('.delete-image').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('هل أنت متأكد من حذف هذه الصورة؟')) {
+                const imageId = this.dataset.imageId;
+                fetch(`/admin/products/images/${imageId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                }).then(response => {
+                    if (response.ok) {
+                        this.closest('.col-md-3').remove();
+                    }
+                });
+            }
+        });
     });
-</script>
-
-
-<!-- حقل رفع صورة المنتج الرئيسية -->
-<input type="file" id="productImageInput" name="image" accept="image/*">
-<div id="productImageDisplay">
-    <!-- إذا كان هناك صورة رئيسية محملة مسبقاً، نعرضها هنا -->
-    @if($product->image)
-    <img src="{{ asset('storage/products' . $product->image) }}" alt="Product Image">
-
-    <img src="{{ Storage::url($product->image) }}" style="max-width: 100%;">
-@endif
-
-</div>
-
-
-<script>
-var productImageDisplay = document.getElementById('productImageDisplay');
-var deleteProductImageButton = document.getElementById('deleteProductImage');
-
-document.getElementById('productImageInput').addEventListener('change', function(event) {
-    productImageDisplay.innerHTML = '';
-    var file = event.target.files[0];
-    if (file && file.type.match('image.*')) {
-        var img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.style.maxWidth = '100%';
-        productImageDisplay.appendChild(img);
-        deleteProductImageButton.style.display = 'block'; // Show delete button
-    }
-});
-
-deleteProductImageButton.addEventListener('click', function() {
-    productImageDisplay.innerHTML = '';
-    deleteProductImageButton.style.display = 'none'; // Hide delete button
 });
 </script>
+@endpush
 
-
-<!-- حقل رفع فيديو المنتج -->
-<input type="file" id="productVideoInput" name="video" accept="video/*">
-<div id="productVideoDisplay">
-    <!-- إذا كان هناك فيديو محمل مسبقاً، نعرضه هنا -->
-    @if($product->video)
-        <video src="{{ Storage::url($product->video) }}" controls style="max-width: 100%;"></video>
-        <!-- حقل مخفي لتحديد الفيديو الذي يريد المستخدم حذفه -->
-        <input type="checkbox" name="delete_video" value="{{ $product->video }}">
-        <label for="delete_video">حذف الفيديو</label>
-    @endif
-</div>
-
-<script>
-var productVideoDisplay = document.getElementById('productVideoDisplay');
-var deleteProductVideoButton = document.getElementById('deleteProductVideo');
-
-document.getElementById('productVideoInput').addEventListener('change', function(event) {
-    productVideoDisplay.innerHTML = '';
-    var file = event.target.files[0];
-    if (file && file.type.match('video.*')) {
-        var video = document.createElement('video');
-        video.src = URL.createObjectURL(file);
-        video.controls = true;
-        video.style.maxWidth = '100%';
-        productVideoDisplay.appendChild(video);
-        deleteProductVideoButton.style.display = 'block'; // Show delete button
-    }
-});
-
-deleteProductVideoButton.addEventListener('click', function() {
-    productVideoDisplay.innerHTML = '';
-    deleteProductVideoButton.style.display = 'none'; // Hide delete button
-});
-</script>
-
-        <button type="submit" class="btn btn-primary">تحديث</button>
-    </div>
-</form>
 @endsection

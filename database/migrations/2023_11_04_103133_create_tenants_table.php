@@ -13,7 +13,17 @@ return new class extends Migration
     {
         Schema::create('tenants', function (Blueprint $table) {
             $table->id();
+            $table->string('email')->unique();
+            $table->string('phone')->nullable();
+            $table->string('identity_number')->nullable();
+            $table->date('date_of_birth')->nullable();
+            $table->enum('gender', ['male', 'female', 'other'])->nullable();
+            $table->string('nationality')->nullable();
+            $table->string('occupation')->nullable();
+            $table->decimal('monthly_income', 12, 2)->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -3,8 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\Permission;
+use App\Models\PermissionCategory;
 use Illuminate\Support\Facades\Route;
 use Livewire\Component;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PermissionForm extends Component
 {
@@ -17,6 +19,18 @@ class PermissionForm extends Component
     public $permissions = [];
 
     public $editingPermissionId = null;
+
+    public $permissionSearch = '';
+    public $sortField = 'name';
+    public $sortDirection = 'asc';
+
+    public $viewMode = 'table'; // table or tree
+
+    public $categories = [];
+
+    public $facilityLevel = null;
+    public $validFrom = null;
+    public $validTo = null;
 
     public function mount()
     {
@@ -32,14 +46,39 @@ class PermissionForm extends Component
             return ! is_null($page['name']);
         })->values()->toArray();
 
+        // جلب التصنيفات مع الصلاحيات
+        $this->categories = PermissionCategory::with(['children', 'permissions.translations'])->whereNull('parent_id')->get();
         $this->permissions = Permission::with('translations')->get();
     }
 
     public function render()
     {
         $permissions = Permission::with('translations')->get();
+        // فلترة حسب البحث
+        if (!empty($this->permissionSearch)) {
+            $permissions = $permissions->filter(function ($permission) {
+                return str_contains(strtolower($permission->name), strtolower($this->permissionSearch));
+            });
+        }
+        // فرز حسب الحقل والاتجاه
+        $permissions = $permissions->sortBy(function($item) {
+            $field = $this->sortField;
+            return strtolower($item->$field ?? '');
+        }, SORT_REGULAR, $this->sortDirection === 'desc');
 
-        return view('livewire.permission-form', compact('permissions'));
+        return view('livewire.permission-form', [
+            'permissions' => $permissions,
+        ]);
+    }
+
+    public function sortBy($field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
     }
 
     public function edit($permissionId)
@@ -123,11 +162,16 @@ class PermissionForm extends Component
         $this->editingPermissionId = null;
     }
 
-    public function savePermission($permissionId)
+    public function savePermission()
     {
-        // التحقق من البيانات وحفظ التحديثات
-        $this->updatePermission(); // يمكن تحديث هذه الدالة لقبول معرف الإذن والبيانات
-        $this->editingPermissionId = null; // إنهاء وضع التحرير
+        $data = $this->validate([
+            'name' => 'required',
+            'facilityLevel' => 'nullable|string',
+            'validFrom' => 'nullable|date',
+            'validTo' => 'nullable|date|after_or_equal:validFrom',
+        ]);
+
+        // ... حفظ الصلاحية مع الحقول الجديدة
     }
 
     public function cancelEditing()
@@ -135,12 +179,37 @@ class PermissionForm extends Component
         $this->editingPermissionId = null;
     }
 
-    public function delete($id)
+    public function delete($permissionId)
     {
-        $permission = Permission::findOrFail($id);
+        $permission = \App\Models\Permission::findOrFail($permissionId);
+        if ($permission->roles()->count() > 0) {
+            $this->dispatch('cannotDeletePermission', message: __('لا يمكن حذف صلاحية مرتبطة بأدوار.'));
+            return;
+        }
         $permission->translations()->delete();
         $permission->delete();
 
         $this->permissions = Permission::with('translations')->get(); // Refresh the list
+    }
+
+    public function copyPermission($permissionId)
+    {
+        $original = \App\Models\Permission::findOrFail($permissionId);
+        $newPermission = $original->replicate(['name', 'pages', 'translations']);
+        $newPermission->name = $original->name . ' (نسخة)';
+        $newPermission->save();
+        $newPermission->translations = $original->translations;
+        $newPermission->save();
+        $this->dispatch('permissionCopied');
+    }
+
+    public function exportPermissions()
+    {
+        return Excel::download(new \App\Exports\PermissionsExport, 'permissions.xlsx');
+    }
+
+    public function importPermissions()
+    {
+        // تنفيذ الاستيراد حسب الملف المرفوع
     }
 }

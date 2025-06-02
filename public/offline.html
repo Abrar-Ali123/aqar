@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>غير متصل - عقار</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+        }
+        .offline-container {
+            text-align: center;
+            padding: 2rem;
+        }
+        .offline-icon {
+            font-size: 5rem;
+            color: #dc3545;
+            margin-bottom: 1rem;
+        }
+        .retry-button {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <i class="fas fa-wifi-slash offline-icon"></i>
+        <h1 class="h3 mb-3">أنت غير متصل بالإنترنت</h1>
+        <p class="text-muted">يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى</p>
+        <button class="btn btn-primary retry-button" onclick="window.location.reload()">
+            <i class="fas fa-sync-alt me-2"></i>
+            إعادة المحاولة
+        </button>
+    </div>
+</body>
+</html>

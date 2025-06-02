@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Language;
 use Livewire\Component;
 
 class RoleForm extends Component
@@ -30,6 +31,8 @@ class RoleForm extends Component
 
     public $editingRoleId = null;
 
+    public $roleSearch = '';
+
     public function mount()
     {
         $this->permissions = Permission::all();
@@ -38,7 +41,8 @@ class RoleForm extends Component
         $userFacilityId = auth()->user()->facility_id ?? null;
         $this->isMainFacility = $userFacilityId == 1;
 
-        foreach (config('app.locales') as $locale) {
+        $languages = Language::where('is_active', true)->pluck('code');
+        foreach ($languages as $locale) {
             $this->translations[$locale] = ['name' => ''];
         }
     }
@@ -50,8 +54,14 @@ class RoleForm extends Component
 
     public function render()
     {
+        $filteredRoles = $this->roles;
+        if (!empty($this->roleSearch)) {
+            $filteredRoles = $this->roles->filter(function ($role) {
+                return str_contains(strtolower($role->name), strtolower($this->roleSearch));
+            });
+        }
         return view('livewire.role-form', [
-            'roles' => $this->roles,
+            'roles' => $filteredRoles,
             'permissions' => $this->permissions,
         ]);
     }
@@ -104,14 +114,17 @@ class RoleForm extends Component
         }
     }
 
-    public function deleteRole($id)
+    public function deleteRole($roleId)
     {
-        $role = Role::find($id);
-        if ($role) {
-            $role->translations()->delete();
-            $role->delete();
-            $this->roles = Role::with('translations')->get();
+        $role = \App\Models\Role::withCount('users')->findOrFail($roleId);
+        if ($role->users_count > 0) {
+            $this->dispatch('cannotDeleteRole', message: __('لا يمكن حذف دور مرتبط بمستخدمين.'));
+            return;
         }
+        $role->translations()->delete();
+        $role->delete();
+        $this->roles = Role::with('translations')->get();
+        $this->dispatch('roleDeleted');
     }
 
     public function cancelEdit()
@@ -122,7 +135,8 @@ class RoleForm extends Component
     private function resetForm()
     {
         $this->reset(['translations', 'isPrimary', 'isPaid', 'price', 'selectedPermissions', 'selectedRoleId']);
-        foreach (config('app.locales') as $locale) {
+        $languages = Language::where('is_active', true)->pluck('code');
+        foreach ($languages as $locale) {
             $this->translations[$locale] = ['name' => ''];
         }
     }
@@ -135,5 +149,36 @@ class RoleForm extends Component
     public function addSubRole()
     {
         $this->saveRole(false);
+    }
+
+    public function copyRole($roleId)
+    {
+        $original = \App\Models\Role::with('permissions')->findOrFail($roleId);
+        $newRole = $original->replicate(['name', 'description', 'translations', 'is_active', 'level']);
+        $newRole->name = $original->name . ' (نسخة)';
+        $newRole->save();
+        $newRole->permissions()->sync($original->permissions->pluck('id')->toArray());
+        $newRole->translations = $original->translations;
+        $newRole->save();
+        $this->dispatch('roleCopied');
+    }
+
+    public function exportRoles()
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\RolesExport, 'roles.xlsx');
+    }
+
+    public function importRoles()
+    {
+        // تنفيذ الاستيراد حسب الملف المرفوع
+    }
+
+    public function suggestTranslations($roleId)
+    {
+        // منطق اقتراح الترجمة تلقائيًا (مثال: باستخدام Google Translate API أو خدمة داخلية)
+        $role = \App\Models\Role::findOrFail($roleId);
+        $role->translations['en']['name'] = $role->name . ' (EN Suggested)';
+        $role->save();
+        $this->dispatch('translationSuggested');
     }
 }

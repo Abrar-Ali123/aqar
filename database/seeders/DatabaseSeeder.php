@@ -1,118 +1,92 @@
 <?php
 
+namespace Database\Seeders;
+
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Database\Seeders\LanguageSeeder;
+use Database\Seeders\ProductTypeSeeder;
+use Database\Seeders\UserSeeder;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\CategorySeeder;
+use Database\Seeders\ProductSeeder;
+use Database\Seeders\FacilitySeeder;
+use Database\Seeders\FeatureSeeder;
+use Database\Seeders\BankSeeder;
+use Database\Seeders\AttributeSeeder;
+use Database\Seeders\PackageSeeder;
+use Database\Seeders\BuildingSeeder;
+use Database\Seeders\BookingSeeder;
+use Database\Seeders\ContractSeeder;
+use Database\Seeders\AppointmentSeeder;
+use Database\Seeders\TenantSeeder;
+use Database\Seeders\TaskSeeder;
+use Database\Seeders\CommentSeeder;
+use Database\Seeders\OwnerSeeder;
+use Database\Seeders\TranslationSeeder;
+use Database\Seeders\CitiesTableSeeder;
+use Database\Seeders\TestUsersSeeder;
+use Database\Seeders\FacilityPageSeeder;
+use Database\Seeders\BusinessCategoryTemplatesSeeder;
+
 
 class DatabaseSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        $allRoutes = Route::getRoutes()->getRoutesByName();
-        $allRoutesNames = array_keys($allRoutes);
-
-        // Create the main facility
-        $mainFacilityId = DB::table('facilities')->insertGetId([
-            'is_active' => true,
-            'is_primary' => true,
-            'logo' => null,
-            'header' => null,
-            'license' => null,
-            'latitude' => null,
-            'longitude' => null,
-            'google_maps_url' => null,
+        // 1. البيانات الأساسية
+        $this->call([
+            LanguageSeeder::class,      // اللغات
+            TranslationSeeder::class,   // الترجمات
+            BankSeeder::class,          // البنوك
+            CitiesTableSeeder::class,   // المدن
         ]);
 
-        DB::table('facility_translations')->insert([
-            ['facility_id' => $mainFacilityId, 'name' => 'Main Facility', 'info' => 'Main facility information in English', 'locale' => 'en'],
-            ['facility_id' => $mainFacilityId, 'name' => 'المنشأة الرئيسية', 'info' => 'معلومات المنشأة الرئيسية باللغة العربية', 'locale' => 'ar'],
+        // 2. الأدوار والصلاحيات
+        $this->call([
+            PermissionSeeder::class,    // الصلاحيات
+            RoleSeeder::class,          // الأدوار
         ]);
 
-        // Create permissions
-        $permissionId = DB::table('permissions')->insertGetId([
-            'pages' => json_encode($allRoutesNames),
+        // 3. المستخدمين والملاك والمنشآت
+        $this->call([
+            UserSeeder::class,          // المستخدمين
+            OwnerSeeder::class,         // الملاك
+            FacilitySeeder::class,      // المنشآت
+            TestUsersSeeder::class,
+            FacilityPageSeeder::class,    // صفحات المنشآت
         ]);
 
-        DB::table('permission_translations')->insert([
-            ['permission_id' => $permissionId, 'name' => 'Full Access', 'locale' => 'en'],
-            ['permission_id' => $permissionId, 'name' => 'وصول كامل', 'locale' => 'ar'],
+        // 4. التصنيفات والميزات
+        $this->call([
+            CategorySeeder::class,      // التصنيفات
+            AttributeSeeder::class,      // السمات/الخصائص
+            FeatureSeeder::class,       // الميزات
+            PackageSeeder::class,       // الباقات
+            BusinessCategoryTemplatesSeeder::class, // قوالب الفئات
         ]);
 
-        // Create the admin role if it doesn't exist
-        $adminRoleId = DB::table('roles')->updateOrInsert(
-            ['permission_id' => $permissionId],
-            ['is_primary' => true]
-        );
-
-        DB::table('role_translations')->insertOrIgnore([
-            ['role_id' => $adminRoleId, 'name' => 'Administrator', 'locale' => 'en'],
-            ['role_id' => $adminRoleId, 'name' => 'مدير', 'locale' => 'ar'],
+        // 5. العقارات والمباني
+        $this->call([
+            BuildingSeeder::class,      // المباني
+            ProductSeeder::class,       // العقارات
         ]);
 
-        // Create the admin user and associate it with the main facility and admin role
-        $adminUserId = DB::table('users')->insertGetId([
-            'phone_number' => '+966550880798',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('admin123'),
-            'avatar' => 'default.jpg',
-            'bank_account' => '000123456',
-            'facility_id' => $mainFacilityId,
-            'primary_role' => 'Administrator',
+        // 6. الحجوزات والعقود
+        $this->call([
+            // BookingSeeder::class, // Temporarily commented out due to dependency on ProductSeeder       // الحجوزات
+            ContractSeeder::class,      // العقود
+            AppointmentSeeder::class,   // المواعيد
         ]);
 
-        DB::table('user_translations')->insert([
-            ['user_id' => $adminUserId, 'name' => 'مدير النظام', 'locale' => 'ar'],
-            ['user_id' => $adminUserId, 'name' => 'System Administrator', 'locale' => 'en'],
-        ]);
-
-        // Create the normal user role if it doesn't exist
-        $userRoleId = DB::table('roles')->updateOrInsert(
-            ['permission_id' => $permissionId],
-            ['is_primary' => false]
-        );
-
-        DB::table('role_translations')->insertOrIgnore([
-            ['role_id' => $userRoleId, 'name' => 'User', 'locale' => 'en'],
-            ['role_id' => $userRoleId, 'name' => 'مستخدم', 'locale' => 'ar'],
-        ]);
-
-        // Create a normal user and associate it with the main facility and normal user role
-        $normalUserId = DB::table('users')->insertGetId([
-            'phone_number' => '987654321',
-            'email' => 'user@example.com',
-            'password' => Hash::make('user123'),
-            'avatar' => 'default.jpg',
-            'bank_account' => '000987654',
-            'facility_id' => $mainFacilityId,
-            'primary_role' => 'User',
-        ]);
-
-        DB::table('user_translations')->insert([
-            ['user_id' => $normalUserId, 'name' => 'مستخدم عادي', 'locale' => 'ar'],
-            ['user_id' => $normalUserId, 'name' => 'Normal User', 'locale' => 'en'],
-        ]);
-
-        // Attach roles to users
-        DB::table('user_role')->insert([
-            ['user_id' => $adminUserId, 'role_id' => $adminRoleId],
-            ['user_id' => $normalUserId, 'role_id' => $userRoleId],
-        ]);
-
-        DB::table('user_facility_role')->insert([
-            'user_id' => $adminUserId,
-            'facility_id' => $mainFacilityId,
-            'role_id' => $adminRoleId,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('user_facility_role')->insert([
-            'user_id' => $normalUserId,
-            'facility_id' => $mainFacilityId,
-            'role_id' => $userRoleId,
-            'created_at' => now(),
-            'updated_at' => now(),
+        // 7. المستأجرين والمهام
+        $this->call([
+            TenantSeeder::class,        // المستأجرين
+            TaskSeeder::class,          // المهام
+            // CommentSeeder::class, // Temporarily commented out due to dependency on ProductSeeder       // التعليقات
         ]);
     }
 }

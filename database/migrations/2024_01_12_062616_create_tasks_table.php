@@ -1,31 +1,34 @@
 <?php
- use Illuminate\Database\Migrations\Migration;
- use Illuminate\Database\Schema\Blueprint;
- use Illuminate\Support\Facades\Schema;
 
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
- return new class extends Migration
- {
-     /**
-      * Run the migrations.
-      */
-     public function up()
-     {
-         Schema::create('tasks', function (Blueprint $table) {
-             $table->id();
-             $table->timestamp('deadline')->nullable(); // توقيت المهمة
-             $table->unsignedBigInteger('created_by'); // معرف الموظف الذي أنشأ المهمة
-             $table->string('status')->default('pending'); // حالة المهمة
-             $table->string('priority')->default('medium'); // أهمية المهمة
-             $table->string('type')->default('internal'); // نوع المهمة (داخلي/خارجي)
-             $table->timestamps();
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('tasks', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->unsignedBigInteger('user_id');
+            $table->enum('status', ['new', 'in_progress', 'completed'])->default('new');
+            $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
+            $table->string('category')->nullable();
+            $table->date('due_date')->nullable();
+            $table->json('assigned_to')->nullable(); // [user_ids]
+            $table->json('comments')->nullable(); // [{user_id, content, created_at}]
+            $table->json('attachments')->nullable(); // [{name, path, type, size}]
+            $table->json('time_logs')->nullable(); // [{start, end, duration}]
+            $table->json('subtasks')->nullable(); // [{title, completed}]
+            $table->timestamps();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+        });
+    }
 
-             $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
-         });
-     }
-
-     public function down()
-     {
+    public function down()
+    {
         Schema::dropIfExists('tasks');
-     }
- };
+    }
+};

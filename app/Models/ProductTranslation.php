@@ -11,10 +11,14 @@ class ProductTranslation extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
+
     protected $fillable = [
-        'product_id',
         'name',
         'description',
+        'meta_title',
+        'meta_description',
+        'meta_keywords',
         'locale',
     ];
 

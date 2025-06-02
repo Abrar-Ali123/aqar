@@ -19,6 +19,8 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('facility_id')->nullable();
             $table->foreign('facility_id')->references('id')->on('facilities')->onDelete('cascade');
+            $table->unsignedBigInteger('permission_id')->nullable();
+            $table->foreign('permission_id')->references('id')->on('permissions')->onDelete('cascade');
         });
     }
 

@@ -164,38 +164,12 @@
                                     }
                                 </script>
 
-
                                 <div class="col-md-6">
-                                    <div>
-                                        <label for="name_ar" class="form-label">الاسم (عربي) <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" name="translations[ar][name]" class="form-control"
-                                            id="name_ar" placeholder="أدخل الاسم بالعربية" required>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div>
-                                        <label for="name_en" class="form-label">الاسم (إنجليزي) <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" name="translations[en][name]" class="form-control"
-                                            id="name_en" placeholder="أدخل الاسم بالإنجليزية" required>
-                                    </div>
+                                    <x-translatable-field name="name" label="الاسم" :languages="config('app.locales')" required placeholder="أدخل الاسم" />
                                 </div>
                                 <div class="col-md-6">
-                                    <div>
-                                        <label for="info_ar" class="form-label">المعلومات (عربي)</label>
-                                        <textarea name="translations[ar][info]" class="form-control" id="info_ar" rows="3"></textarea>
-                                    </div>
+                                    <x-translatable-field name="info" label="المعلومات" type="textarea" :languages="config('app.locales')" placeholder="أدخل المعلومات" />
                                 </div>
-
-                                <div class="col-md-6">
-                                    <div>
-                                        <label for="info_en" class="form-label">المعلومات (إنجليزي)</label>
-                                        <textarea name="translations[en][info]" class="form-control" id="info_en" rows="3"></textarea>
-                                    </div>
-                                </div>
-
 
                                 <div class="col-md-6">
                                     <div>

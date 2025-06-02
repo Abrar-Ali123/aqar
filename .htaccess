@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Allow access to all directories
+    Options +FollowSymLinks
+    
+    # Allow access to public routes
+    RewriteRule ^(products|/)($|/) - [L]
+    
+    # Pass all other requests to public/index.php
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ public/index.php [L]
+</IfModule>
+
+# Disable authentication for specific paths
+<LocationMatch "^/(products|/)">
+    Satisfy Any
+    Allow from all
+</LocationMatch>

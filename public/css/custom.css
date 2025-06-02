@@ -1,0 +1,62 @@
+/* RTL Support */
+[dir="rtl"] .me-1 {
+    margin-left: 0.25rem !important;
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .me-2 {
+    margin-left: 0.5rem !important;
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .ms-auto {
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .dropdown-menu {
+    text-align: right;
+}
+
+[dir="rtl"] .dropdown-item {
+    text-align: right;
+}
+
+[dir="rtl"] .navbar-nav {
+    padding-right: 0;
+}
+
+/* Language Switcher */
+.language-switcher .dropdown-toggle {
+    min-width: 120px;
+    justify-content: space-between;
+}
+
+.language-switcher .dropdown-menu {
+    min-width: 120px;
+}
+
+.language-switcher .dropdown-item:hover {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+.language-switcher .dropdown-item:hover .flag-icon {
+    filter: brightness(1.2);
+}
+
+/* Animations */
+.dropdown-menu {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -9,14 +9,10 @@
         @method('PUT')
 
         <label>اسم المشروع</label>
-        @foreach(config('translatable.locales') as $locale)
-            <input type="text" name="translations[{{ $locale }}][name]" value="{{ $project->translate($locale)->name ?? '' }}" placeholder="اسم المشروع ({{ $locale }})">
-        @endforeach
+        <x-translatable-field name="name" label="اسم المشروع" :languages="config('translatable.locales')" :value="$project->translations['name'] ?? []" required placeholder="اسم المشروع" />
 
         <label>الوصف</label>
-        @foreach(config('translatable.locales') as $locale)
-            <textarea name="translations[{{ $locale }}][description]" placeholder="الوصف ({{ $locale }})">{{ $project->translate($locale)->description ?? '' }}</textarea>
-        @endforeach
+        <x-translatable-field name="description" label="الوصف" type="textarea" :languages="config('translatable.locales')" :value="$project->translations['description'] ?? []" placeholder="الوصف" />
 
         <label>النوع</label>
         <select name="project_type">

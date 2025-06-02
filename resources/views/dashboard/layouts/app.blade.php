@@ -33,7 +33,8 @@
     <link href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 
-
+    <!-- Icon Picker CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-iconpicker/dist/css/bootstrap-iconpicker.min.css" rel="stylesheet">
 
 </head>
 
@@ -186,6 +187,9 @@
 
     <script src="{{ asset('dashboard') }}/js/app.js"></script>
 
+    <!-- Icon Picker JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-iconpicker/dist/js/bootstrap-iconpicker.bundle.min.js"></script>
+    @yield('scripts')
 </body>
 
 </html>

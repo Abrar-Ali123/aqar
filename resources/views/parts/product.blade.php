@@ -16,14 +16,14 @@
                     <div class="card-body">
                         <h5 class="card-title text-primary">{{ $product->name }}</h5>
                         <p class="card-text"><strong>الفئة:</strong> {{ $product->category->name }}</p>
-                        <p class="card-text"><strong>نوع المنتج:</strong> {{ $product->property_type === 'sale' ? 'للبيع' : 'للتأجير' }}</p>
+                        <p class="card-text"><strong>نوع العملية:</strong> {{ $product->type_label }}</p>
                         <p class="card-text"><strong>الوصف:</strong> {{ $product->description }}</p>
                         <p class="card-text fw-bold"><strong>السعر:</strong> {{ $product->price }} ريال</p>
                         <p class="card-text"><strong>الموقع:</strong> {{ $product->latitude }}, {{ $product->longitude }}</p>
                         <p class="card-text"><strong>المنشأة:</strong> {{ $product->facility->name }}</p>
                         <p class="card-text"><strong>رابط الموقع:</strong> <a href="{{ $product->google_maps_url }}" target="_blank">عرض على الخريطة</a></p>
 
-                        @if($product->property_type === 'sale')
+                        @if($product->type === 'sale')
                             <div class="d-flex gap-2 mt-2">
                                 <!-- زر حجز كاش -->
                                 <form action="{{ route('booking.cash', $product->id) }}" method="POST" class="w-50">

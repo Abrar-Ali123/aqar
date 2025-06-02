@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480">
+  <path fill="#bd3d44" d="M0 0h640v480H0"/>
+  <path stroke="#fff" stroke-width="40" d="M0 55.3h640M0 129h640M0 203h640M0 277h640M0 351h640M0 425h640"/>
+  <rect fill="#192f5d" width="257" height="275.7"/>
+  <g fill="#fff">
+    <g id="d">
+      <g id="c">
+        <g id="e">
+          <g id="b">
+            <path id="a" d="M0 0v1h.5z" transform="translate(128.5 149.3) scale(2.8)"/>
+            <use href="#a" y="2"/>
+            <use href="#a" y="4"/>
+          </g>
+          <use href="#b" y="6"/>
+        </g>
+        <use href="#e" y="-6"/>
+        <use href="#e" y="-12"/>
+        <use href="#e" y="-18"/>
+      </g>
+      <use href="#c" x="14"/>
+      <use href="#c" x="28"/>
+      <use href="#c" x="42"/>
+      <use href="#c" x="56"/>
+    </g>
+    <use href="#d" x="-84"/>
+    <use href="#d" x="-28"/>
+    <use href="#d" x="28"/>
+    <use href="#d" x="84"/>
+  </g>
+</svg>

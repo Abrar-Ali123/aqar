@@ -2,73 +2,79 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\HasTranslations;
+use App\Traits\DispatchesUniversalEvent;
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Attribute extends Model
 {
-    use HasFactory;
+    use HasTranslations, DispatchesUniversalEvent, LogsActivity;
 
     protected $fillable = [
         'type',
-        'required',
-        'category_id',
-        'icon',
-        'Symbol',
+        'key',
+        'validation_rules',
+        'is_required',
+        'is_filterable',
+        'has_inventory',
+        'inventory_settings',
+        'is_active',
+        'translations'
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
     protected $casts = [
-        'required' => 'boolean',
+        'is_required' => 'boolean',
+        'is_filterable' => 'boolean',
+        'has_inventory' => 'boolean',
+        'inventory_settings' => 'array',
+        'is_active' => 'boolean',
+        'translations' => 'array'
     ];
 
-    /**
-     * Get the translations for the attribute.
-     */
-    public function translations()
+    public function products()
     {
-        return $this->hasMany(AttributeTranslation::class);
+        return $this->belongsToMany(Product::class, 'product_attributes')
+            ->withPivot('value')
+            ->withTimestamps();
     }
 
-    /**
-     * Get the category that owns the attribute.
-     */
-    public function category()
+    public function scopeActive($query)
     {
-        return $this->belongsTo(Category::class);
+        return $query->where('is_active', true);
     }
 
-    /**
-     * Get the attribute values for the attribute.
-     */
-    public function attributeValues()
+    public function scopeFilterable($query)
     {
-        return $this->hasMany(ProductAttributeValue::class);
+        return $query->where('is_filterable', true);
     }
 
-    /**
-     * Get the attribute name based on locale.
-     */
-    public function getNameAttribute()
+    public function scopeRequired($query)
     {
-        $locale = app()->getLocale();
-        $translation = $this->translations()->where('locale', $locale)->first();
-
-        return $translation ? $translation->name : '';
+        return $query->where('is_required', true);
     }
 
-    /**
-     * Get the attribute symbol based on locale.
-     */
-    public function getSymbolTextAttribute()
+    // تحديد ما إذا كان السمة تدعم إدارة المخزون
+    public function supportsInventory(): bool
     {
-        $locale = app()->getLocale();
-        $translation = $this->translations()->where('locale', $locale)->first();
+        return $this->has_inventory;
+    }
 
-        return $translation ? $translation->symbol : $this->Symbol;
+    // الحصول على إعدادات المخزون للسمة
+    public function getInventorySettings(): array
+    {
+        return $this->inventory_settings ?? [
+            'track_quantity' => true,
+            'low_stock_threshold' => null,
+            'expiry_tracking' => false,
+            'batch_tracking' => false
+        ];
+    }
+
+    // التحقق من نوع تتبع المخزون
+    public function hasInventoryFeature(string $feature): bool
+    {
+        return ($this->getInventorySettings()[$feature] ?? false) === true;
     }
 }

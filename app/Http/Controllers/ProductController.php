@@ -2,156 +2,322 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProductType;
+use App\Models\ProductType as DynamicProductType;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Facility;
 use App\Models\Product;
 use App\Models\ProductTranslation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function getReverseGeocode($latitude, $longitude)
+    public function __construct()
     {
-        $client = new \GuzzleHttp\Client;
-        $apiKey = env('GOOGLE_MAPS_API_KEY');
-        $language = app()->getLocale();
-        $response = $client->get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$latitude},{$longitude}&language={$language}&key={$apiKey}");
-        $data = json_decode($response->getBody());
-
-        return $data->results[0]->formatted_address ?? 'Address not found';
+        // لا يوجد middleware
     }
 
-    public function index(Request $request)
+    public function index(Request $request): View
     {
+        $locale = app()->getLocale();
+        
+        // Get products with their translations
+        $query = Product::query()
+            ->select('products.*')
+            ->join('product_translations', 'products.id', '=', 'product_translations.product_id')
+            ->where('product_translations.locale', $locale)
+            ->where('products.is_active', true);
 
-        $query = Product::with(['facility', 'translations', 'attributes']);
-
-        if ($request->filled('search_term')) {
-            $query->whereHas('translations', function ($subQuery) use ($request) {
-                $subQuery->where('name', 'like', '%'.$request->search_term.'%')
-                    ->where('locale', app()->getLocale());
-            });
+        // البحث حسب الاسم
+        if ($request->filled('search')) {
+            $query->where('product_translations.name', 'like', '%' . $request->search . '%');
         }
 
-        $attributes = collect();
+        // التصفية حسب الفئة
         if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-            $attributes = Attribute::with('translations')
-                ->whereHas('categories', function ($query) use ($request) {
-                    $query->where('category_id', $request->category_id);
-                })
-                ->get();
+            $query->where('products.category_id', $request->category_id);
+        }
 
-            foreach ($attributes as $attribute) {
-                $attributeField = 'attribute_'.$attribute->id;
-                if ($request->filled($attributeField)) {
-                    $query->whereHas('attributes', function ($subQuery) use ($attribute, $request, $attributeField) {
-                        $subQuery->where('attribute_id', $attribute->id)
-                            ->where('value', $request->$attributeField);
-                    });
+        // Get categories with their translations
+        $categories = Category::query()
+            ->select([
+                'categories.id',
+                'category_translations.name'
+            ])
+            ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
+            ->where('category_translations.locale', $locale)
+            ->withCount('products')
+            ->get();
+
+        // Get products with their relations
+        $products = $query
+            ->with([
+                'facility' => function($q) use ($locale) {
+                    $q->select([
+                        'facilities.id',
+                        'facility_translations.name'
+                    ])
+                    ->join('facility_translations', 'facilities.id', '=', 'facility_translations.facility_id')
+                    ->where('facility_translations.locale', $locale);
+                },
+                'category' => function($q) use ($locale) {
+                    $q->select([
+                        'categories.id',
+                        'category_translations.name'
+                    ])
+                    ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
+                    ->where('category_translations.locale', $locale);
+                },
+                'translations' => function($q) use ($locale) {
+                    $q->where('locale', $locale);
                 }
-            }
-        }
+            ])
+            ->latest()
+            ->paginate(12);
 
-        if ($request->filled('product_type_id')) {
-            $query->where('product_type_id', $request->product_type_id);
-        }
-
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        if ($request->filled('facility_id')) {
-            $query->whereHas('facility', function ($subQuery) use ($request) {
-                $subQuery->where('id', $request->facility_id);
-            });
-        }
-
-        if ($request->filled('sort_by')) {
-            $query->orderBy($request->sort_by, $request->sort_direction ?? 'asc');
-        }
-
-        $categories = Category::all();
-        $products = product::all();
-        $facilities = Facility::all();
-
-        return view('parts.product', compact('products', 'categories', 'facilities', 'attributes'));
+        return view('products.index', [
+            'products' => $products,
+            'categories' => $categories,
+            'type' => $request->type,
+            'search_query' => $request->search,
+        ]);
     }
 
     public function create()
     {
-        $categories = Category::all();
-        $attributes = Attribute::with('translations')->get();
-
-        return view('products.create', compact('categories',  'attributes'));
+        $staticTypes = collect(ProductType::cases())->map(fn($t) => [
+            'key' => $t->value,
+            'label' => $t->label(),
+        ]);
+        $dynamicTypes = DynamicProductType::all(['key', 'label']);
+        $allTypes = $staticTypes->merge($dynamicTypes);
+        return view('dashboard.products.create', compact('allTypes'));
     }
 
     public function store(Request $request)
     {
+        $request->validate([
+            'translations.*.name' => 'required|string|max:255',
+            'translations.*.description' => 'nullable|string',
+            'type' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'category_id' => 'required|exists:categories,id',
+            'facility_id' => 'nullable|exists:facilities,id',
+            'thumbnail' => 'nullable|image|max:2048',
+            'media.*' => 'nullable|file|max:10240',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'google_maps_url' => 'nullable|url'
+        ]);
 
-        $facilityId = auth()->user()->facility_id;
+        $product = new Product();
+        $product->fill($request->only([
+            'type',
+            'price',
+            'category_id',
+            'facility_id',
+            'latitude',
+            'longitude',
+            'google_maps_url'
+        ]));
 
-        $product = new Product;
-        $product->is_active = $request->has('is_active');
-        $product->price = $request->price;
-        $product->category_id = $request->category_id;
-        $product->latitude = $request->latitude;
-        $product->longitude = $request->longitude;
-        $product->google_maps_url = $request->google_maps_url;
-        $product->seller_user_id = auth()->user()->id;
+        $product->is_active = $request->boolean('is_active', true);
+        $product->sku = $this->generateSku();
+        $product->owner_user_id = auth()->id();
+        $product->seller_user_id = $request->seller_user_id ?? auth()->id();
 
-        $product->facility_id = auth()->user()->facility_id;
-
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('products/images', 'public');
-            $product->image = $imagePath;
+        // معالجة الصورة الرئيسية
+        if ($request->hasFile('thumbnail')) {
+            $product->thumbnail = $request->file('thumbnail')->store('products/thumbnails', 'public');
         }
 
-        if ($request->hasFile('video')) {
-            $videoPath = $request->file('video')->store('products/videos', 'public');
-            $product->video = $videoPath;
-        }
-
-        if ($request->hasFile('image_gallery')) {
-            $images = [];
-            foreach ($request->file('image_gallery') as $image) {
-                $imageName = time().rand(1, 1000).'.'.$image->extension();
-                $image->storeAs('products/image_gallery', $imageName, 'public');
-                $images[] = $imageName;
+        // معالجة الوسائط
+        if ($request->hasFile('media')) {
+            $mediaFiles = [];
+            foreach ($request->file('media') as $file) {
+                $mediaFiles[] = [
+                    'path' => $file->store('products/media', 'public'),
+                    'type' => $file->getClientMimeType(),
+                    'name' => $file->getClientOriginalName()
+                ];
             }
-            $product->image_gallery = implode(',', $images);
+            $product->media = $mediaFiles;
         }
 
         $product->save();
 
         // حفظ الترجمات
-        if ($request->has('translations')) {
-            $translations = [];
-            foreach ($request->input('translations') as $locale => $translationData) {
-                $translations[] = [
-                    'product_id' => $product->id,
-                    'locale' => $locale,
-                    'name' => $translationData['name'],
-                    'description' => $translationData['description'] ?? '',
-                ];
-            }
-            ProductTranslation::insert($translations);
+        foreach ($request->translations as $locale => $translation) {
+            ProductTranslation::create([
+                'product_id' => $product->id,
+                'locale' => $locale,
+                'name' => $translation['name'],
+                'description' => $translation['description'] ?? null
+            ]);
         }
 
-        // حفظ السمات
-        if ($request->filled('attributes')) {
-            foreach ($request->input('attributes') as $attributeId => $value) {
+        // حفظ قيم الخصائص
+        if ($request->has('attributes')) {
+            foreach ($request->attributes as $attributeId => $value) {
                 $attribute = Attribute::findOrFail($attributeId);
                 $processedValue = $this->processAttributeValue($attribute, $value);
-                $product->attributes()->attach($attributeId, ['value' => $processedValue]);
+                $product->attributeValues()->create([
+                    'attribute_id' => $attributeId,
+                    'value' => $processedValue
+                ]);
             }
         }
 
-        return redirect()->route('products.index', ['facility' => $facilityId])->with('success', 'تم إضافة المنتج بنجاح.');
+        return redirect()
+            ->route('products.show', $product)
+            ->with('success', 'تم إنشاء المنتج بنجاح');
+    }
+
+    public function show(Product $product): View
+    {
+        // تحميل العلاقات المطلوبة
+        $product->load(['facility', 'category', 'owner', 'seller', 'attributeValues.attribute', 'translations']);
+
+        // الحصول على المنتجات المشابهة
+        $relatedProducts = Product::with(['facility', 'category'])
+            ->where('id', '!=', $product->id)
+            ->where('is_active', true)
+            ->where(function($query) use ($product) {
+                $query->where('category_id', $product->category_id)
+                      ->orWhere('type', $product->type);
+            })
+            ->latest()
+            ->take(4)
+            ->get();
+
+        return view('products.show', [
+            'product' => $product,
+            'relatedProducts' => $relatedProducts,
+        ]);
+    }
+
+    public function edit($id)
+    {
+        $product = Product::findOrFail($id);
+        $staticTypes = collect(ProductType::cases())->map(fn($t) => [
+            'key' => $t->value,
+            'label' => $t->label(),
+        ]);
+        $dynamicTypes = DynamicProductType::all(['key', 'label']);
+        $allTypes = $staticTypes->merge($dynamicTypes);
+        return view('dashboard.products.edit', compact('product', 'allTypes'));
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        $request->validate([
+            'translations.*.name' => 'required|string|max:255',
+            'translations.*.description' => 'nullable|string',
+            'type' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'category_id' => 'required|exists:categories,id',
+            'facility_id' => 'nullable|exists:facilities,id',
+            'thumbnail' => 'nullable|image|max:2048',
+            'media.*' => 'nullable|file|max:10240',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'google_maps_url' => 'nullable|url'
+        ]);
+
+        $product->fill($request->only([
+            'type',
+            'price',
+            'category_id',
+            'facility_id',
+            'latitude',
+            'longitude',
+            'google_maps_url'
+        ]));
+
+        $product->is_active = $request->boolean('is_active', true);
+        $product->seller_user_id = $request->seller_user_id ?? $product->seller_user_id;
+
+        // معالجة الصورة الرئيسية
+        if ($request->hasFile('thumbnail')) {
+            // حذف الصورة القديمة
+            if ($product->thumbnail) {
+                Storage::disk('public')->delete($product->thumbnail);
+            }
+            $product->thumbnail = $request->file('thumbnail')->store('products/thumbnails', 'public');
+        }
+
+        // معالجة الوسائط
+        if ($request->hasFile('media')) {
+            // حذف الوسائط القديمة
+            if (!empty($product->media)) {
+                foreach ($product->media as $media) {
+                    Storage::disk('public')->delete($media['path']);
+                }
+            }
+            
+            $mediaFiles = [];
+            foreach ($request->file('media') as $file) {
+                $mediaFiles[] = [
+                    'path' => $file->store('products/media', 'public'),
+                    'type' => $file->getClientMimeType(),
+                    'name' => $file->getClientOriginalName()
+                ];
+            }
+            $product->media = $mediaFiles;
+        }
+
+        $product->save();
+
+        // تحديث الترجمات
+        foreach ($request->translations as $locale => $translation) {
+            $product->translations()->updateOrCreate(
+                ['locale' => $locale],
+                [
+                    'name' => $translation['name'],
+                    'description' => $translation['description'] ?? null
+                ]
+            );
+        }
+
+        // تحديث قيم الخصائص
+        $product->attributeValues()->delete();
+        if ($request->has('attributes')) {
+            foreach ($request->attributes as $attributeId => $value) {
+                $attribute = Attribute::findOrFail($attributeId);
+                $processedValue = $this->processAttributeValue($attribute, $value);
+                $product->attributeValues()->create([
+                    'attribute_id' => $attributeId,
+                    'value' => $processedValue
+                ]);
+            }
+        }
+
+        return redirect()
+            ->route('products.show', $product)
+            ->with('success', 'تم تحديث المنتج بنجاح');
+    }
+
+    public function destroy(Product $product)
+    {
+        // حذف الملفات
+        if ($product->thumbnail) {
+            Storage::disk('public')->delete($product->thumbnail);
+        }
+        
+        if (!empty($product->media)) {
+            foreach ($product->media as $media) {
+                Storage::disk('public')->delete($media['path']);
+            }
+        }
+
+        $product->delete();
+
+        return redirect()
+            ->route('products.index')
+            ->with('success', 'تم حذف المنتج بنجاح');
     }
 
     protected function processAttributeValue($attribute, $value)
@@ -159,14 +325,21 @@ class ProductController extends Controller
         switch ($attribute->type) {
             case 'number':
                 return floatval($value);
-            case 'checkbox':
+            case 'boolean':
                 return filter_var($value, FILTER_VALIDATE_BOOLEAN);
-            case 'text':
-            case 'email':
-            case 'url':
-                return strip_tags($value);
+            case 'date':
+                return date('Y-m-d', strtotime($value));
             default:
                 return $value;
         }
+    }
+
+    protected function generateSku()
+    {
+        $prefix = 'PRD';
+        $timestamp = now()->format('ymd');
+        $random = str_pad(random_int(0, 999), 3, '0', STR_PAD_LEFT);
+        
+        return "{$prefix}{$timestamp}{$random}";
     }
 }

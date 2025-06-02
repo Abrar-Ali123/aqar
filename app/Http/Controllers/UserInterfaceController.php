@@ -11,7 +11,7 @@ class UserInterfaceController extends Controller
     {
         $facilities = Facility::all();
 
-        return view('home', compact('facilities'));
+        return view('public.home', compact('facilities'));
     }
 
 }

@@ -14,9 +14,8 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            //            $table->string('name');
+            $table->string('firebase_uid')->unique()->nullable();
             $table->boolean('is_multilanguage_enabled')->default(false);
-
             $table->string('phone_number');
             $table->string('email')->nullable();
             $table->timestamp('email_verified_at')->nullable();

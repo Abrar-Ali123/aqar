@@ -5,6 +5,9 @@
 
     RewriteEngine On
 
+    # Allow public access to these paths
+    RewriteRule ^(products|/)($|/) - [L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

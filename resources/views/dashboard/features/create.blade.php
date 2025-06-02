@@ -32,24 +32,8 @@
 
                             <div class="row gy-4">
                                 <!-- بيانات الميزة الأساسية -->
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="name_ar" class="form-label">اسم الميزة (عربي)</label>
-                                        <input type="text" name="name_ar" class="form-control" id="name_ar" value="{{ old('name_ar') }}" required>
-                                        @error('name_ar')
-                                            <div class="text-danger">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="name_en" class="form-label">اسم الميزة (إنجليزي)</label>
-                                        <input type="text" name="name_en" class="form-control" id="name_en" value="{{ old('name_en') }}" required>
-                                        @error('name_en')
-                                            <div class="text-danger">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                                <div class="col-md-12">
+                                    <x-translatable-field name="name" label="اسم الميزة" :languages="config('app.locales')" required placeholder="اسم الميزة" />
                                 </div>
 
                                 <div class="col-md-12">

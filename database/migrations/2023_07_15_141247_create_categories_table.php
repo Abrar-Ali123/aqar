@@ -14,7 +14,10 @@ return new class extends Migration
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('parent_id')->nullable();
+            // $table->string('name'); // تم حذف عمود الاسم من الجدول الأساسي، الاسم في جدول الترجمة فقط
             $table->string('image')->nullable();
+            $table->boolean('is_active')->default(1);
+            $table->softDeletes();
             $table->timestamps();
 
             $table->foreign('parent_id')->references('id')->on('categories')->onDelete('cascade');
@@ -26,6 +29,3 @@ return new class extends Migration
         Schema::dropIfExists('categories');
     }
 };
-
-
-

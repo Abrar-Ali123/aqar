@@ -14,6 +14,8 @@ class AccountManagementComponent extends Component
 
     use WithFileUploads;
 
+    public $withConfirmed = false;
+
     public $countryCode;
 
     public $selectedRoleId;
@@ -79,8 +81,6 @@ class AccountManagementComponent extends Component
     public $isVerified = false;
 
     public $step = 0;
-
-    public $withConfirmed = false;
 
     public $withError = false;
 

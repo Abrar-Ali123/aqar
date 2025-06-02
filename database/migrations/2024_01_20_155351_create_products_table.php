@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_featured')->default(false);
             $table->double('price');
             $table->string('image')->nullable();
             $table->string('video')->nullable();
@@ -27,7 +28,6 @@ return new class extends Migration
             $table->unsignedBigInteger('facility_id');
             $table->foreign('facility_id')->references('id')->on('facilities')->onDelete('cascade');
 
-            $table->enum('property_type', ['sale', 'rent'])->default('sale');
             $table->unsignedBigInteger('owner_user_id')->nullable();
             $table->foreign('owner_user_id')->references('id')->on('users')->onDelete('cascade');
 
@@ -36,6 +36,12 @@ return new class extends Migration
 
             $table->unsignedBigInteger('category_id')->nullable();
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+
+            // النوع العام للمنتج (بيع/إيجار/اشتراك...)
+            $table->string('type')->default('sale');
+            // لا داعي للتحقق من وجود property_type هنا لأن الجدول جديد
+
+            $table->integer('order')->default(0);
 
             $table->timestamps();
             $table->softDeletes();

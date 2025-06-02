@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use App\Models\CategoryTranslation;
+use App\Models\Language;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -13,181 +13,235 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::with('translations', 'parent.translations')->paginate(10);
-        return view('dashboard.categories.index', compact('categories'));
+        if (!auth()->user()->can('view categories')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $categories = Category::with(['translations', 'parent', 'children'])
+            ->orderBy('order')
+            ->paginate(10);
+
+        return view('admin.categories.index', compact('categories'));
     }
 
     public function create()
     {
+        if (!auth()->user()->can('create categories')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $languages = Language::active()->orderBy('order')->get();
         $categories = Category::with('translations')->get();
-        return view('dashboard.categories.create', compact('categories'));
+        return view('admin.categories.create', compact('languages', 'categories'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name_ar' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
-            'parent_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        if (!auth()->user()->can('create categories')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
 
-        DB::beginTransaction();
+        $rules = $this->getValidationRules();
+        $validated = $request->validate($rules);
 
         try {
-            // Upload image if provided
-            $imagePath = null;
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('categories', 'public');
-            }
+            DB::transaction(function () use ($request, $validated) {
+                // إنشاء الفئة
+                $category = Category::create([
+                    'parent_id' => $request->parent_id,
+                    'icon' => $request->icon,
+                    'icon_type' => $request->icon_type,
+                    'show_in_menu' => $request->boolean('show_in_menu'),
+                    'show_in_home' => $request->boolean('show_in_home'),
+                    'is_featured' => $request->boolean('is_featured'),
+                    'status' => $request->status ?? 'active',
+                    'order' => $request->order ?? 0,
+                ]);
 
-            // Create category
-            $category = Category::create([
-                'parent_id' => $request->parent_id,
-                'image' => $imagePath,
-            ]);
+                // معالجة الصورة المخصصة
+                if ($request->hasFile('custom_icon')) {
+                    $path = $request->file('custom_icon')->store('categories/icons', 'public');
+                    $category->update(['custom_icon' => $path]);
+                }
 
-            // Create translations
-            CategoryTranslation::create([
-                'category_id' => $category->id,
-                'locale' => 'ar',
-                'name' => $request->name_ar,
-            ]);
+                // حفظ الترجمات
+                foreach ($validated['name'] as $locale => $name) {
+                    if ($name || Language::where('code', $locale)->value('is_required')) {
+                        $category->translations()->create([
+                            'locale' => $locale,
+                            'name' => $name,
+                            'description' => $validated['description'][$locale] ?? null,
+                            'meta_title' => $validated['meta_title'][$locale] ?? null,
+                            'meta_description' => $validated['meta_description'][$locale] ?? null,
+                            'slug' => $validated['slug'][$locale] ?? null,
+                        ]);
+                    }
+                }
 
-            CategoryTranslation::create([
-                'category_id' => $category->id,
-                'locale' => 'en',
-                'name' => $request->name_en,
-            ]);
-
-            DB::commit();
+                // ربط السمات
+                if ($request->has('attributes')) {
+                    $category->attributes()->sync($request->attributes);
+                }
+            });
 
             return redirect()->route('admin.categories.index')
-                ->with('success', 'تم إضافة الفئة بنجاح');
+                ->with('success', __('messages.category_created_successfully'));
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إضافة الفئة: ' . $e->getMessage())
+                ->with('error', __('messages.category_create_error'))
                 ->withInput();
         }
-    }
-
-    public function show(Category $category)
-    {
-        $category->load('translations', 'parent.translations', 'children.translations');
-        return view('dashboard.categories.show', compact('category'));
     }
 
     public function edit(Category $category)
     {
-        $categories = Category::with('translations')
-            ->where('id', '!=', $category->id)
-            ->whereNotIn('id', $category->getAllChildren()->pluck('id')->toArray())
+        if (!auth()->user()->can('edit categories')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $languages = Language::active()->orderBy('order')->get();
+        $translations = $category->translations->keyBy('locale');
+        $categories = Category::where('id', '!=', $category->id)
+            ->with('translations')
             ->get();
 
-        return view('dashboard.categories.edit', compact('category', 'categories'));
+        return view('admin.categories.edit', compact('category', 'languages', 'translations', 'categories'));
     }
 
     public function update(Request $request, Category $category)
     {
-        $request->validate([
-            'name_ar' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
-            'parent_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        if (!auth()->user()->can('edit categories')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
 
-        // Prevent category from being its own parent or child
-        if ($request->parent_id && (
-            $request->parent_id == $category->id ||
-            $category->getAllChildren()->pluck('id')->contains($request->parent_id)
-        )) {
+        // التحقق من عدم اختيار الفئة كأب لنفسها
+        if ($request->parent_id == $category->id) {
             return redirect()->back()
-                ->with('error', 'لا يمكن جعل الفئة أباً لنفسها أو لأحد أبنائها')
+                ->with('error', __('messages.category_cannot_be_parent_of_itself'))
                 ->withInput();
         }
 
-        DB::beginTransaction();
+        $rules = $this->getValidationRules($category->id);
+        $validated = $request->validate($rules);
 
         try {
-            // Update image if provided
-            $imagePath = $category->image;
-            if ($request->hasFile('image')) {
-                // Delete old image
-                if ($category->image) {
-                    Storage::disk('public')->delete($category->image);
+            DB::transaction(function () use ($request, $category, $validated) {
+                // تحديث الفئة
+                $category->update([
+                    'parent_id' => $request->parent_id,
+                    'icon' => $request->icon,
+                    'icon_type' => $request->icon_type,
+                    'show_in_menu' => $request->boolean('show_in_menu'),
+                    'show_in_home' => $request->boolean('show_in_home'),
+                    'is_featured' => $request->boolean('is_featured'),
+                    'status' => $request->status ?? $category->status,
+                    'order' => $request->order ?? $category->order,
+                ]);
+
+                // معالجة الصورة المخصصة
+                if ($request->hasFile('custom_icon')) {
+                    // حذف الصورة القديمة
+                    if ($category->custom_icon) {
+                        Storage::disk('public')->delete($category->custom_icon);
+                    }
+                    
+                    $path = $request->file('custom_icon')->store('categories/icons', 'public');
+                    $category->update(['custom_icon' => $path]);
                 }
-                $imagePath = $request->file('image')->store('categories', 'public');
-            } elseif ($request->has('delete_image') && $request->delete_image) {
-                // Delete image if requested
-                if ($category->image) {
-                    Storage::disk('public')->delete($category->image);
+
+                // تحديث الترجمات
+                foreach ($validated['name'] as $locale => $name) {
+                    $category->translations()->updateOrCreate(
+                        ['locale' => $locale],
+                        [
+                            'name' => $name,
+                            'description' => $validated['description'][$locale] ?? null,
+                            'meta_title' => $validated['meta_title'][$locale] ?? null,
+                            'meta_description' => $validated['meta_description'][$locale] ?? null,
+                            'slug' => $validated['slug'][$locale] ?? null,
+                        ]
+                    );
                 }
-                $imagePath = null;
-            }
 
-            // Update category
-            $category->update([
-                'parent_id' => $request->parent_id,
-                'image' => $imagePath,
-            ]);
-
-            // Update translations
-            $category->translations()->where('locale', 'ar')->update([
-                'name' => $request->name_ar,
-            ]);
-
-            $category->translations()->where('locale', 'en')->update([
-                'name' => $request->name_en,
-            ]);
-
-            DB::commit();
+                // تحديث السمات
+                if ($request->has('attributes')) {
+                    $category->attributes()->sync($request->attributes);
+                }
+            });
 
             return redirect()->route('admin.categories.index')
-                ->with('success', 'تم تحديث الفئة بنجاح');
+                ->with('success', __('messages.category_updated_successfully'));
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء تحديث الفئة: ' . $e->getMessage())
+                ->with('error', __('messages.category_update_error'))
                 ->withInput();
         }
     }
 
     public function destroy(Category $category)
     {
-        // Check if category has products
-        if ($category->products()->count() > 0) {
-            return redirect()->back()
-                ->with('error', 'لا يمكن حذف الفئة لأنها تحتوي على منتجات');
+        if (!auth()->user()->can('delete categories')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
         }
 
-        DB::beginTransaction();
+        // التحقق من عدم وجود فئات فرعية
+        if ($category->children()->exists()) {
+            return redirect()->back()
+                ->with('error', __('messages.category_has_children'));
+        }
+
+        // التحقق من عدم وجود منتجات
+        if ($category->products()->exists()) {
+            return redirect()->back()
+                ->with('error', __('messages.category_has_products'));
+        }
 
         try {
-            // Delete image
-            if ($category->image) {
-                Storage::disk('public')->delete($category->image);
-            }
+            DB::transaction(function () use ($category) {
+                // حذف الصورة المخصصة
+                if ($category->custom_icon) {
+                    Storage::disk('public')->delete($category->custom_icon);
+                }
 
-            // Update children to parent's parent
-            foreach ($category->children as $child) {
-                $child->update(['parent_id' => $category->parent_id]);
-            }
-
-            // Delete translations
-            $category->translations()->delete();
-
-            // Delete category
-            $category->delete();
-
-            DB::commit();
+                // حذف الفئة (سيتم حذف الترجمات تلقائياً بسبب onDelete('cascade'))
+                $category->delete();
+            });
 
             return redirect()->route('admin.categories.index')
-                ->with('success', 'تم حذف الفئة بنجاح');
+                ->with('success', __('messages.category_deleted_successfully'));
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء حذف الفئة: ' . $e->getMessage());
+                ->with('error', __('messages.category_delete_error'));
         }
+    }
+
+    private function getValidationRules($categoryId = null): array
+    {
+        $rules = [
+            'parent_id' => 'nullable|exists:categories,id',
+            'icon' => 'nullable|string|max:50',
+            'icon_type' => 'required|in:font,custom',
+            'custom_icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'show_in_menu' => 'boolean',
+            'show_in_home' => 'boolean',
+            'is_featured' => 'boolean',
+            'status' => 'nullable|in:active,inactive',
+            'order' => 'nullable|integer|min:0',
+            'attributes' => 'nullable|array',
+            'attributes.*' => 'exists:attributes,id',
+        ];
+
+        // إضافة قواعد التحقق للحقول المترجمة
+        foreach (Language::active()->get() as $language) {
+            $required = $language->is_required ? 'required' : 'nullable';
+            $rules["name.{$language->code}"] = "{$required}|string|max:255";
+            $rules["description.{$language->code}"] = "nullable|string";
+            $rules["meta_title.{$language->code}"] = "nullable|string|max:255";
+            $rules["meta_description.{$language->code}"] = "nullable|string";
+            $rules["slug.{$language->code}"] = "{$required}|string|max:255|unique:category_translations,slug" . 
+                ($categoryId ? ",{$categoryId},category_id" : '');
+        }
+
+        return $rules;
     }
 }

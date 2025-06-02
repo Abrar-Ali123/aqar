@@ -34,25 +34,7 @@
                             <div class="row gy-4">
                                 <!-- بيانات الفئة الأساسية -->
                                 <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="name_ar" class="form-label">اسم الفئة (عربي)</label>
-                                        <input type="text" name="name_ar" class="form-control" id="name_ar"
-                                            value="{{ old('name_ar', $category->translations->where('locale', 'ar')->first()->name ?? '') }}" required>
-                                        @error('name_ar')
-                                            <div class="text-danger">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="name_en" class="form-label">اسم الفئة (إنجليزي)</label>
-                                        <input type="text" name="name_en" class="form-control" id="name_en"
-                                            value="{{ old('name_en', $category->translations->where('locale', 'en')->first()->name ?? '') }}" required>
-                                        @error('name_en')
-                                            <div class="text-danger">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                                    <x-translatable-field name="name" label="اسم الفئة" :languages="config('app.locales')" :value="$category->translations['name'] ?? []" required placeholder="اسم الفئة" />
                                 </div>
 
                                 <div class="col-md-6">

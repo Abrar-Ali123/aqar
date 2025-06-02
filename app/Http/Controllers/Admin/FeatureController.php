@@ -4,178 +4,281 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Feature;
-use App\Models\FeatureTranslation;
+use App\Models\Language;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class FeatureController extends Controller
 {
-    /**
-     * Display a listing of the features.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
-        $features = Feature::with('translations')->paginate(10);
-        return view('dashboard.features.index', compact('features'));
+        if (!auth()->user()->can('view features')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $features = Feature::with(['translations', 'category'])
+            ->orderBy('order')
+            ->paginate(10);
+
+        return view('admin.features.index', compact('features'));
     }
 
-    /**
-     * Show the form for creating a new feature.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
-        return view('dashboard.features.create');
+        if (!auth()->user()->can('create features')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $languages = Language::active()->orderBy('order')->get();
+        return view('admin.features.create', compact('languages'));
     }
 
-    /**
-     * Store a newly created feature in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'name_ar' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
-            'icon' => 'nullable|string|max:255',
-        ]);
+        if (!auth()->user()->can('create features')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
 
-        DB::beginTransaction();
+        $rules = $this->getValidationRules();
+        $validated = $request->validate($rules);
 
         try {
-            // Create feature
-            $feature = Feature::create([
-                'icon' => $request->icon,
-            ]);
+            DB::transaction(function () use ($request, $validated) {
+                // إنشاء الميزة
+                $feature = Feature::create([
+                    'category_id' => $request->category_id,
+                    'icon' => $request->icon,
+                    'icon_type' => $request->icon_type,
+                    'is_required' => $request->boolean('is_required'),
+                    'is_filterable' => $request->boolean('is_filterable'),
+                    'show_in_list' => $request->boolean('show_in_list'),
+                    'show_in_details' => $request->boolean('show_in_details'),
+                    'status' => $request->status ?? 'active',
+                    'order' => $request->order ?? 0,
+                ]);
 
-            // Create translations
-            FeatureTranslation::create([
-                'feature_id' => $feature->id,
-                'locale' => 'ar',
-                'name' => $request->name_ar,
-            ]);
+                // معالجة الصورة المخصصة
+                if ($request->hasFile('custom_icon')) {
+                    $path = $request->file('custom_icon')->store('features/icons', 'public');
+                    $feature->update(['custom_icon' => $path]);
+                }
 
-            FeatureTranslation::create([
-                'feature_id' => $feature->id,
-                'locale' => 'en',
-                'name' => $request->name_en,
-            ]);
+                // حفظ الترجمات
+                foreach ($validated['name'] as $locale => $name) {
+                    if ($name || Language::where('code', $locale)->value('is_required')) {
+                        $feature->translations()->create([
+                            'locale' => $locale,
+                            'name' => $name,
+                            'description' => $validated['description'][$locale] ?? null,
+                            'help_text' => $validated['help_text'][$locale] ?? null,
+                        ]);
+                    }
+                }
 
-            DB::commit();
+                // إضافة الخيارات
+                if ($request->has('options')) {
+                    foreach ($request->options as $option) {
+                        $featureOption = $feature->options()->create([
+                            'value' => $option['value'],
+                            'price' => $option['price'] ?? 0,
+                            'is_default' => $option['is_default'] ?? false,
+                            'order' => $option['order'] ?? 0,
+                        ]);
+
+                        // حفظ ترجمات الخيارات
+                        foreach ($option['label'] as $locale => $label) {
+                            if ($label || Language::where('code', $locale)->value('is_required')) {
+                                $featureOption->translations()->create([
+                                    'locale' => $locale,
+                                    'label' => $label,
+                                ]);
+                            }
+                        }
+                    }
+                }
+            });
 
             return redirect()->route('admin.features.index')
-                ->with('success', 'تم إضافة الميزة بنجاح');
+                ->with('success', __('messages.feature_created_successfully'));
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إضافة الميزة: ' . $e->getMessage())
+                ->with('error', __('messages.feature_create_error'))
                 ->withInput();
         }
     }
 
-    /**
-     * Display the specified feature.
-     *
-     * @param  \App\Models\Feature  $feature
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Feature $feature)
-    {
-        $feature->load('translations');
-        return view('dashboard.features.show', compact('feature'));
-    }
-
-    /**
-     * Show the form for editing the specified feature.
-     *
-     * @param  \App\Models\Feature  $feature
-     * @return \Illuminate\Http\Response
-     */
     public function edit(Feature $feature)
     {
-        return view('dashboard.features.edit', compact('feature'));
+        if (!auth()->user()->can('edit features')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
+        $languages = Language::active()->orderBy('order')->get();
+        $translations = $feature->translations->keyBy('locale');
+        $optionTranslations = $feature->options->load('translations')
+            ->map(function ($option) {
+                return [
+                    'id' => $option->id,
+                    'translations' => $option->translations->keyBy('locale'),
+                ];
+            })
+            ->keyBy('id');
+
+        return view('admin.features.edit', compact('feature', 'languages', 'translations', 'optionTranslations'));
     }
 
-    /**
-     * Update the specified feature in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Feature  $feature
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, Feature $feature)
     {
-        $request->validate([
-            'name_ar' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
-            'icon' => 'nullable|string|max:255',
-        ]);
+        if (!auth()->user()->can('edit features')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
 
-        DB::beginTransaction();
+        $rules = $this->getValidationRules($feature->id);
+        $validated = $request->validate($rules);
 
         try {
-            // Update feature
-            $feature->update([
-                'icon' => $request->icon,
-            ]);
+            DB::transaction(function () use ($request, $feature, $validated) {
+                // تحديث الميزة
+                $feature->update([
+                    'category_id' => $request->category_id,
+                    'icon' => $request->icon,
+                    'icon_type' => $request->icon_type,
+                    'is_required' => $request->boolean('is_required'),
+                    'is_filterable' => $request->boolean('is_filterable'),
+                    'show_in_list' => $request->boolean('show_in_list'),
+                    'show_in_details' => $request->boolean('show_in_details'),
+                    'status' => $request->status ?? $feature->status,
+                    'order' => $request->order ?? $feature->order,
+                ]);
 
-            // Update translations
-            $feature->translations()->where('locale', 'ar')->update([
-                'name' => $request->name_ar,
-            ]);
+                // معالجة الصورة المخصصة
+                if ($request->hasFile('custom_icon')) {
+                    // حذف الصورة القديمة
+                    if ($feature->custom_icon) {
+                        Storage::disk('public')->delete($feature->custom_icon);
+                    }
+                    
+                    $path = $request->file('custom_icon')->store('features/icons', 'public');
+                    $feature->update(['custom_icon' => $path]);
+                }
 
-            $feature->translations()->where('locale', 'en')->update([
-                'name' => $request->name_en,
-            ]);
+                // تحديث الترجمات
+                foreach ($validated['name'] as $locale => $name) {
+                    $feature->translations()->updateOrCreate(
+                        ['locale' => $locale],
+                        [
+                            'name' => $name,
+                            'description' => $validated['description'][$locale] ?? null,
+                            'help_text' => $validated['help_text'][$locale] ?? null,
+                        ]
+                    );
+                }
 
-            DB::commit();
+                // تحديث الخيارات
+                if ($request->has('options')) {
+                    // حذف الخيارات غير الموجودة في الطلب
+                    $feature->options()
+                        ->whereNotIn('id', collect($request->options)->pluck('id')->filter())
+                        ->delete();
+
+                    foreach ($request->options as $option) {
+                        $featureOption = $feature->options()->updateOrCreate(
+                            ['id' => $option['id'] ?? null],
+                            [
+                                'value' => $option['value'],
+                                'price' => $option['price'] ?? 0,
+                                'is_default' => $option['is_default'] ?? false,
+                                'order' => $option['order'] ?? 0,
+                            ]
+                        );
+
+                        // تحديث ترجمات الخيارات
+                        foreach ($option['label'] as $locale => $label) {
+                            $featureOption->translations()->updateOrCreate(
+                                ['locale' => $locale],
+                                ['label' => $label]
+                            );
+                        }
+                    }
+                } else {
+                    // حذف جميع الخيارات إذا لم يتم تحديد أي خيارات
+                    $feature->options()->delete();
+                }
+            });
 
             return redirect()->route('admin.features.index')
-                ->with('success', 'تم تحديث الميزة بنجاح');
+                ->with('success', __('messages.feature_updated_successfully'));
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء تحديث الميزة: ' . $e->getMessage())
+                ->with('error', __('messages.feature_update_error'))
                 ->withInput();
         }
     }
 
-    /**
-     * Remove the specified feature from storage.
-     *
-     * @param  \App\Models\Feature  $feature
-     * @return \Illuminate\Http\Response
-     */
     public function destroy(Feature $feature)
     {
-        // Check if feature has product features
-        if ($feature->productFeatures()->count() > 0) {
-            return redirect()->back()
-                ->with('error', 'لا يمكن حذف الميزة لأنها مستخدمة في منتجات');
+        if (!auth()->user()->can('delete features')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
         }
 
-        DB::beginTransaction();
+        // التحقق من استخدام الميزة
+        if ($feature->products()->exists()) {
+            return redirect()->back()
+                ->with('error', __('messages.feature_in_use'));
+        }
 
         try {
-            // Delete translations
-            $feature->translations()->delete();
+            DB::transaction(function () use ($feature) {
+                // حذف الصورة المخصصة
+                if ($feature->custom_icon) {
+                    Storage::disk('public')->delete($feature->custom_icon);
+                }
 
-            // Delete feature
-            $feature->delete();
-
-            DB::commit();
+                // حذف الميزة (سيتم حذف الترجمات والخيارات تلقائياً بسبب onDelete('cascade'))
+                $feature->delete();
+            });
 
             return redirect()->route('admin.features.index')
-                ->with('success', 'تم حذف الميزة بنجاح');
+                ->with('success', __('messages.feature_deleted_successfully'));
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء حذف الميزة: ' . $e->getMessage());
+                ->with('error', __('messages.feature_delete_error'));
         }
+    }
+
+    private function getValidationRules($featureId = null): array
+    {
+        $rules = [
+            'category_id' => 'required|exists:categories,id',
+            'icon' => 'nullable|string|max:50',
+            'icon_type' => 'required|in:font,custom',
+            'custom_icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'is_required' => 'boolean',
+            'is_filterable' => 'boolean',
+            'show_in_list' => 'boolean',
+            'show_in_details' => 'boolean',
+            'status' => 'nullable|in:active,inactive',
+            'order' => 'nullable|integer|min:0',
+            'options' => 'nullable|array',
+            'options.*.id' => 'nullable|exists:feature_options,id',
+            'options.*.value' => 'required|string|max:50',
+            'options.*.price' => 'nullable|numeric|min:0',
+            'options.*.is_default' => 'boolean',
+            'options.*.order' => 'nullable|integer|min:0',
+        ];
+
+        // إضافة قواعد التحقق للحقول المترجمة
+        foreach (Language::active()->get() as $language) {
+            $required = $language->is_required ? 'required' : 'nullable';
+            $rules["name.{$language->code}"] = "{$required}|string|max:255";
+            $rules["description.{$language->code}"] = "nullable|string";
+            $rules["help_text.{$language->code}"] = "nullable|string";
+
+            // قواعد التحقق لترجمات الخيارات
+            $rules["options.*.label.{$language->code}"] = "{$required}|string|max:255";
+        }
+
+        return $rules;
     }
 }
