@@ -3,90 +3,48 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Route;
-use Database\Seeders\LanguageSeeder;
-use Database\Seeders\ProductTypeSeeder;
-use Database\Seeders\UserSeeder;
-use Database\Seeders\RoleSeeder;
-use Database\Seeders\PermissionSeeder;
-use Database\Seeders\CategorySeeder;
-use Database\Seeders\ProductSeeder;
-use Database\Seeders\FacilitySeeder;
-use Database\Seeders\FeatureSeeder;
-use Database\Seeders\BankSeeder;
-use Database\Seeders\AttributeSeeder;
-use Database\Seeders\PackageSeeder;
-use Database\Seeders\BuildingSeeder;
-use Database\Seeders\BookingSeeder;
-use Database\Seeders\ContractSeeder;
-use Database\Seeders\AppointmentSeeder;
-use Database\Seeders\TenantSeeder;
-use Database\Seeders\TaskSeeder;
-use Database\Seeders\CommentSeeder;
-use Database\Seeders\OwnerSeeder;
-use Database\Seeders\TranslationSeeder;
-use Database\Seeders\CitiesTableSeeder;
-use Database\Seeders\TestUsersSeeder;
-use Database\Seeders\FacilityPageSeeder;
-use Database\Seeders\BusinessCategoryTemplatesSeeder;
-
 
 class DatabaseSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        // 1. البيانات الأساسية
+        // 1. الجداول الأساسية المستقلة
         $this->call([
-            LanguageSeeder::class,      // اللغات
-            TranslationSeeder::class,   // الترجمات
-            BankSeeder::class,          // البنوك
-            CitiesTableSeeder::class,   // المدن
+            UserSeeder::class, // إضافة المستخدمين أولاً
+            RoleSeeder::class,
+            PermissionSeeder::class,
+            LanguageSeeder::class,
+            CategorySeeder::class,
+            BusinessSectorSeeder::class,
+            BusinessCategorySeeder::class,
+            AttributeSeeder::class,
         ]);
 
-        // 2. الأدوار والصلاحيات
+        // 2. جداول العلاقات الأساسية
         $this->call([
-            PermissionSeeder::class,    // الصلاحيات
-            RoleSeeder::class,          // الأدوار
+            RolePermissionSeeder::class,
+            PermissionPageSeeder::class,
+            PageTemplateSeeder::class,
         ]);
 
-        // 3. المستخدمين والملاك والمنشآت
+        // 3. جداول المنشآت
         $this->call([
-            UserSeeder::class,          // المستخدمين
-            OwnerSeeder::class,         // الملاك
-            FacilitySeeder::class,      // المنشآت
-            TestUsersSeeder::class,
-            FacilityPageSeeder::class,    // صفحات المنشآت
+            FacilitySeeder::class,
+            FacilityPageSeeder::class,
+            // FacilityImageSeeder::class, // غير موجود حالياً
         ]);
 
-        // 4. التصنيفات والميزات
+        // 4. البيانات المرتبطة بالمنشآت
         $this->call([
-            CategorySeeder::class,      // التصنيفات
-            AttributeSeeder::class,      // السمات/الخصائص
-            FeatureSeeder::class,       // الميزات
-            PackageSeeder::class,       // الباقات
-            BusinessCategoryTemplatesSeeder::class, // قوالب الفئات
+            ProductSeeder::class,
+            // ServiceSeeder::class, // غير موجود حالياً
+            // EventSeeder::class, // غير موجود حالياً
         ]);
 
-        // 5. العقارات والمباني
+        // 5. البيانات الإضافية
         $this->call([
-            BuildingSeeder::class,      // المباني
-            ProductSeeder::class,       // العقارات
-        ]);
-
-        // 6. الحجوزات والعقود
-        $this->call([
-            // BookingSeeder::class, // Temporarily commented out due to dependency on ProductSeeder       // الحجوزات
-            ContractSeeder::class,      // العقود
-            AppointmentSeeder::class,   // المواعيد
-        ]);
-
-        // 7. المستأجرين والمهام
-        $this->call([
-            TenantSeeder::class,        // المستأجرين
-            TaskSeeder::class,          // المهام
-            // CommentSeeder::class, // Temporarily commented out due to dependency on ProductSeeder       // التعليقات
+            // FacilityPageComponentSeeder::class, // غير موجود حالياً
+            // AttributeValueSeeder::class, // غير موجود حالياً
         ]);
     }
 }

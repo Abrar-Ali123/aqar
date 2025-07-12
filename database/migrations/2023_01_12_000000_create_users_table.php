@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('firebase_uid')->unique()->nullable();
             $table->boolean('is_multilanguage_enabled')->default(false);
             $table->string('phone_number');
+            $table->enum('type', ['individual', 'company'])->default('individual');
             $table->string('email')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable();
@@ -43,7 +44,10 @@ return new class extends Migration
             $table->string('youtube')->nullable();
             $table->string('whatsapp_number')->nullable();
             $table->string('telegram')->nullable();
+            $table->string('language_code')->default('ar');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
             $table->foreign('role_id')->references('id')->on('roles')->onDelete('set null');
             $table->foreign('facility_id')->references('id')->on('facilities')->onDelete('cascade');
         });
@@ -56,6 +60,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('users');
+        Schema::enableForeignKeyConstraints();
     }
 };

@@ -15,6 +15,18 @@ return new class extends Migration {
             $table->boolean('is_active')->default(true);
             $table->json('translations')->nullable();
             $table->json('settings')->nullable();
+            $table->json('template_settings')->nullable();
+            $table->json('design_settings')->nullable();
+            $table->json('analytics_settings')->nullable();
+            $table->json('meta_data')->nullable();
+            $table->json('contact_info')->nullable();
+            $table->json('reviews_settings')->nullable();
+            $table->json('schedule_settings')->nullable();
+            $table->json('history_data')->nullable();
+            $table->json('roles_settings')->nullable();
+            $table->json('permissions_settings')->nullable();
+            $table->json('seo_settings')->nullable();
+            $table->text('content')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

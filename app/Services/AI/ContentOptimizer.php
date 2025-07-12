@@ -5,13 +5,19 @@ namespace App\Services\AI;
 use OpenAI\Client;
 use App\Models\Facility;
 
+use App\Models\AiSetting;
+
 class ContentOptimizer
 {
     protected $client;
+    protected $isEnabled;
+    protected $apiModel;
 
     public function __construct(Client $client)
     {
         $this->client = $client;
+        $this->isEnabled = AiSetting::isFeatureEnabled();
+        $this->apiModel = AiSetting::getApiModel();
     }
 
     /**
@@ -19,15 +25,24 @@ class ContentOptimizer
      */
     public function optimizeDescription(Facility $facility, string $targetAudience)
     {
+        if (!$this->isEnabled) {
+            return $facility->description;
+        }
+
         $prompt = "تحسين وصف المنشأة التالية لجذب {$targetAudience}:\n{$facility->description}";
         
-        $response = $this->client->completions()->create([
-            'model' => 'gpt-4',
-            'prompt' => $prompt,
-            'max_tokens' => 500
-        ]);
+        try {
+            $response = $this->client->completions()->create([
+                'model' => $this->apiModel,
+                'prompt' => $prompt,
+                'max_tokens' => 500
+            ]);
 
-        return $response['choices'][0]['text'];
+            return $response['choices'][0]['text'];
+        } catch (\Exception $e) {
+            \Log::error('OpenAI Error: ' . $e->getMessage());
+            return $facility->description;
+        }
     }
 
     /**
@@ -35,18 +50,39 @@ class ContentOptimizer
      */
     public function suggestKeywords(Facility $facility)
     {
+        if (!$this->isEnabled) {
+            // إرجاع كلمات مفتاحية افتراضية من اسم المنشأة والنشاط
+            $keywords = [$facility->name];
+            if ($facility->businessCategory) {
+                $keywords[] = $facility->businessCategory->name;
+            }
+            return array_unique($keywords);
+        }
+
         $prompt = "اقتراح كلمات مفتاحية مناسبة للمنشأة التالية:\n" . 
                  "الاسم: {$facility->name}\n" .
-                 "الوصف: {$facility->description}\n" .
-                 "النشاط: {$facility->businessCategory->name}";
+                 "الوصف: {$facility->description}\n";
 
-        $response = $this->client->completions()->create([
-            'model' => 'gpt-4',
-            'prompt' => $prompt,
-            'max_tokens' => 200
-        ]);
+        if ($facility->businessCategory) {
+            $prompt .= "النشاط: {$facility->businessCategory->name}\n";
+        }
 
-        return explode(',', $response['choices'][0]['text']);
+        try {
+            $response = $this->client->completions()->create([
+                'model' => $this->apiModel,
+                'prompt' => $prompt,
+                'max_tokens' => 200
+            ]);
+
+            return explode(',', $response['choices'][0]['text']);
+        } catch (\Exception $e) {
+            \Log::error('OpenAI Error: ' . $e->getMessage());
+            $keywords = [$facility->name];
+            if ($facility->businessCategory) {
+                $keywords[] = $facility->businessCategory->name;
+            }
+            return array_unique($keywords);
+        }
     }
 
     /**

@@ -17,6 +17,7 @@ return new class extends Migration
             // $table->string('name'); // تم حذف عمود الاسم من الجدول الأساسي، الاسم في جدول الترجمة فقط
             $table->string('image')->nullable();
             $table->boolean('is_active')->default(1);
+            $table->integer('order')->default(0);
             $table->softDeletes();
             $table->timestamps();
 

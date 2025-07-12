@@ -20,8 +20,16 @@ return new class extends Migration {
             $table->string('preview_image')->nullable();
             $table->string('category')->default('general');
             $table->integer('sort_order')->default(0);
+            $table->unsignedBigInteger('category_id')->nullable();
+            $table->json('meta_data')->nullable();
+            $table->json('seo_settings')->nullable();
+            $table->json('analytics_settings')->nullable();
+            $table->json('custom_fields')->nullable();
+            $table->json('validation_rules')->nullable();
+            $table->json('dependencies')->nullable();
             $table->timestamps();
             $table->softDeletes();
+            $table->foreign('category_id')->references('id')->on('categories')->onDelete('set null');
         });
     }
 

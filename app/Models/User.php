@@ -7,18 +7,23 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Traits\HasTranslations;
+use Astrotomic\Translatable\Translatable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, SoftDeletes, HasTranslations;
+    use HasFactory, Notifiable, SoftDeletes, Translatable;
 
-    protected $translatedAttributes = ['name'];
+    public $translatedAttributes = ['name', 'info'];
 
     protected $fillable = [
-        'name',
+        'phone',
         'email',
-        'password',
+        'city',
+        'address',
+        'type',
+        'commercial_record',
+        'tax_number',
+        'profile_completed',
         'phone_number',
         'firebase_uid',
         'email_verified_at',
@@ -282,8 +287,5 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(SavedSearch::class);
     }
 
-    public function translations()
-    {
-        return $this->morphMany(ModelTranslation::class, 'model');
-    }
+
 }

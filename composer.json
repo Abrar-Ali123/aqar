@@ -1,5 +1,5 @@
 {
-    "name": "laravel/laravel",
+    "name": "laravel/saas",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
@@ -7,6 +7,9 @@
     "require": {
         "php": "^8.2",
         "astrotomic/laravel-translatable": "^11.15",
+        "blade-ui-kit/blade-heroicons": "^2.6",
+        "blade-ui-kit/blade-icons": "^1.8",
+        "doctrine/dbal": "^4.2",
         "intervention/image": "^3.11",
         "kreait/firebase-php": "^7.18",
         "laravel/framework": "^11.9",

@@ -2,77 +2,58 @@
 
 namespace App\View\Components;
 
-use Illuminate\View\Component;
 use App\Models\Language;
-use Illuminate\Support\Str;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\View\Component;
 
 class TranslatableField extends Component
 {
-    public $name;
-    public $label;
-    public $type;
-    public $languages;
-    public $translations;
-    public $required;
-    public $options;
-    
-    public function __construct(
-        string $name,
-        $languages = null,
-        $translations = null,
-        string $label = null,
-        string $type = 'text',
-        bool $required = false,
-        array $options = []
+        public string $fieldId;
+    public string $defaultLocale;
+    public array $allAvailableLocales;
+    public $availableLanguageNames;
+    public array $initialLocales;
+    public string $values;
+
+    /**
+     * Create a new component instance.
+     */
+        public function __construct(
+        public string $name,
+        public string $type = 'text',
+        public bool $required = false,
+        public ?Model $model = null,
+        public string $placeholder = 'Enter value',
+        public string $hint = ''
     ) {
-        $this->name = $name;
-        $this->label = $label ?? Str::title(str_replace('_', ' ', $name));
-        $this->type = $type;
-        $this->languages = $languages ?? Language::active()->orderBy('order')->get();
-        $this->translations = $translations;
-        $this->required = $required;
-        $this->options = array_merge($this->getDefaultOptions($type), $options);
+        $this->fieldId = 'translatable_' . str_replace(['[', ']', '.'], '_', $this->name);
+
+        // Fetch default language from DB, fallback to config.
+        $defaultLanguage = Language::getDefaultLanguage();
+        $this->defaultLocale = $defaultLanguage ? $defaultLanguage->code : config('app.fallback_locale', 'ar');
+
+        // Fetch all active languages once.
+        $activeLanguages = Language::active()->get();
+        $this->allAvailableLocales = $activeLanguages->pluck('code')->toArray();
+        $this->availableLanguageNames = $activeLanguages->pluck('name', 'code');
+
+        // Determine which locales to show initially.
+        $initialLocalesData = $this->model ? array_keys($this->model->getTranslations($this->name)) : [];
+        
+        // Ensure the default locale is always included.
+        $this->initialLocales = array_unique(array_merge([$this->defaultLocale], $initialLocalesData));
+
+        // Prepare values for JavaScript, ensuring it's a valid JSON string.
+        $initialValues = $this->model ? $this->model->getTranslations($this->name) : [$this->defaultLocale => ''];
+        $this->values = json_encode($initialValues ?: new \stdClass());
     }
 
-    public function render()
+    /**
+     * Get the view / contents that represent the component.
+     */
+    public function render(): View
     {
         return view('components.translatable-field');
-    }
-
-    public function getFieldType()
-    {
-        return config("translatable.field_types.{$this->type}", config('translatable.field_types.text'));
-    }
-
-    public function getDirection($locale)
-    {
-        return config("translatable.defaults.direction.{$locale}", 'ltr');
-    }
-
-    public function isRequired($language)
-    {
-        if ($this->required) {
-            return true;
-        }
-        
-        return $language->is_required || in_array($language->code, config('translatable.defaults.required_languages', []));
-    }
-
-    public function getValue($locale, $field = null)
-    {
-        $field = $field ?? $this->name;
-        
-        if (!$this->translations) {
-            return old("{$field}.{$locale}");
-        }
-
-        return old("{$field}.{$locale}", 
-            $this->translations[$locale]->{$field} ?? null
-        );
-    }
-
-    private function getDefaultOptions($type)
-    {
-        return config("translatable.field_types.{$type}", []);
     }
 }

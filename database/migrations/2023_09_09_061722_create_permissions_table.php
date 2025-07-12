@@ -22,6 +22,9 @@ return new class extends Migration
 
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('permission_pages');
         Schema::dropIfExists('permissions');
+        Schema::enableForeignKeyConstraints();
     }
 };

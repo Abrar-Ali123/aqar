@@ -54,13 +54,25 @@ class AccountController extends Controller
 
             Auth::login($user);
 
-            return response()->json(['status' => 'registered_and_logged_in', 'message' => 'تم التسجيل بنجاح.']);
+            // إعادة توجيه المستخدم بناءً على نوعه
+            $locale = app()->getLocale();
+            if ($request->type === 'individual') {
+                return response()->json([
+                    'status' => 'registered_individual',
+                    'message' => 'تم تسجيلك بنجاح كفرد. سيتم توجيهك الآن لتعديل ملفك الشخصي.',
+                    'redirect_url' => route('profile.edit', ['locale' => $locale])
+                ]);
+            } elseif ($request->type === 'company') {
+                return response()->json([
+                    'status' => 'registered_company',
+                    'message' => 'تم تسجيلك بنجاح كشركة. سيتم توجيهك الآن لإنشاء منشأتك.',
+                    'redirect_url' => route('facilities.create', ['locale' => $locale])
+                ]);
+            }
 
         } catch (\Exception $e) {
             Log::error("فشل إنشاء المستخدم: " . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => 'فشل إنشاء الحساب.'], 500);
         }
     }
-    
-    
 }

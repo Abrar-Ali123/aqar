@@ -16,7 +16,10 @@ return new class extends Migration
             $table->boolean('is_primary')->default(false);
             $table->boolean('is_paid')->default(false);
             $table->decimal('price', 8, 2)->nullable();
+            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->integer('level')->default(0);
             $table->timestamps();
+            $table->foreign('parent_id')->references('id')->on('roles')->onDelete('set null');
             $table->unsignedBigInteger('facility_id')->nullable();
             $table->foreign('facility_id')->references('id')->on('facilities')->onDelete('cascade');
             $table->unsignedBigInteger('permission_id')->nullable();
@@ -26,6 +29,8 @@ return new class extends Migration
 
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('roles');
+        Schema::enableForeignKeyConstraints();
     }
 };

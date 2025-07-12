@@ -5,15 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Model for user translations compatible with Astrotomic\Translatable.
+ * No extra logic needed.
+ */
 class UserTranslation extends Model
 {
     use HasFactory;
     protected $table = 'user_translations';
     protected $fillable = [
-        'user_id', 'locale', 'name',
+        'user_id', 'locale', 'name', 'info',
     ];
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
 }

@@ -5,7 +5,7 @@
     <div class="container">
         <!-- شريط البحث الرئيسي -->
         <div class="search-header bg-white rounded-3 shadow-sm p-4 mb-4">
-            <form action="{{ route('search', ['locale' => app()->getLocale()]) }}" method="GET" id="searchForm">
+            <form action="{{ route('search', app()->getLocale()) }}" method="GET" id="searchForm">
                 <div class="row g-3">
                     <div class="col-lg-4">
                         <div class="form-group">
@@ -191,7 +191,7 @@
                                 @endif
                             @endforeach
                             <div class="mt-2">
-                                <a href="{{ route('search', ['locale' => app()->getLocale()]) }}" 
+                                <a href="{{ route('search', app()->getLocale()) }}" 
                                    class="btn btn-sm btn-outline-primary">
                                     {{ __('pages.clear_all_filters') }}
                                 </a>

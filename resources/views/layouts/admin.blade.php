@@ -29,6 +29,9 @@
     
     @stack('styles')
     @livewireStyles
+
+    <!-- AlpineJS for interactive components -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
 </head>
 <body class="admin-panel">
     <div class="wrapper">

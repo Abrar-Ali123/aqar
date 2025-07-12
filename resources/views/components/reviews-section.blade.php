@@ -44,7 +44,7 @@
                             </button>
                         @endif
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-outline-primary mt-4">
+
                             {{ __('سجل دخول لإضافة تقييم') }}
                         </a>
                     @endauth

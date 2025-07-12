@@ -39,18 +39,43 @@ class Facility extends Model implements TranslatableContract
         'registration_number',
         'tax_number',
         'styles',
-        'component_settings'
+        'component_settings',
+        'supported_locales',
+        'slug',
+        'rating',
+        'reviews_count',
+        'is_verified'
     ];
+
+    /**
+     * Get the owner of the facility.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The users that belong to the facility.
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'facility_user');
+    }
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'is_verified' => 'boolean',
         'latitude' => 'float',
         'longitude' => 'float',
         'working_hours' => 'array',
         'social_media' => 'array',
         'styles' => 'json',
-        'component_settings' => 'json'
+        'component_settings' => 'json',
+        'supported_locales' => 'array',
+        'rating' => 'float',
+        'reviews_count' => 'integer'
     ];
 
     /**
@@ -58,8 +83,7 @@ class Facility extends Model implements TranslatableContract
      */
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class, 'product_facilities')
-                    ->withTimestamps();
+        return $this->belongsToMany(Product::class, 'product_facilities');
     }
 
     /**
@@ -76,6 +100,14 @@ class Facility extends Model implements TranslatableContract
     public function businessCategory(): BelongsTo
     {
         return $this->belongsTo(BusinessCategory::class);
+    }
+
+    public function getRatingAttribute($value): float
+    {
+        if (!$value) {
+            return 0.0;
+        }
+        return is_numeric($value) ? (float) $value : 0.0;
     }
 
     /**
@@ -147,6 +179,46 @@ class Facility extends Model implements TranslatableContract
     }
 
     /**
+     * Get facility offers
+     */
+    public function offers(): HasMany
+    {
+        return $this->hasMany(Offer::class);
+    }
+
+    /**
+     * Get facility services
+     */
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(Service::class);
+    }
+
+    /**
+     * Get facility events
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+
+    /**
+     * Get facility news
+     */
+    public function news(): HasMany
+    {
+        return $this->hasMany(News::class);
+    }
+
+    /**
+     * Get facility brands
+     */
+    public function brands(): BelongsToMany
+    {
+        return $this->belongsToMany(Brand::class);
+    }
+
+    /**
      * التحقق من دعم اللغة المحددة
      *
      * @param string $locale رمز اللغة
@@ -181,5 +253,70 @@ class Facility extends Model implements TranslatableContract
         $allSettings = $this->component_settings ?? [];
         $allSettings[$componentId] = $settings;
         return $this->update(['component_settings' => $allSettings]);
+    }
+
+    /**
+     * Check if facility has booking feature enabled
+     */
+    public function hasBooking(): bool
+    {
+        return $this->accepts_bookings ?? false;
+    }
+
+    /**
+     * Check if facility has menu feature enabled
+     */
+    public function hasMenu(): bool
+    {
+        $products = $this->products;
+        if($products->count() > 0){
+            return true;
+        }
+        return false;
+        //return $this->belongsToMany(Product::class, 'product_facilities')
+        //            ->exists();
+    }
+
+    /**
+     * Check if facility has gallery feature enabled
+     */
+    public function hasGallery(): bool
+    {
+        return $this->hasMany(FacilityImage::class)
+                    ->select('id')
+                    ->limit(1)
+                    ->exists();
+    }
+
+    /**
+     * Get facility customization settings
+     */
+    protected function getCustomizationAttribute()
+    {
+        $activePage = $this->pages()
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->first();
+
+        if (!$activePage) {
+            return (object) [
+                'design_settings' => [
+                    'primary_color' => '#4a5568',
+                    'secondary_color' => '#718096',
+                    'accent_color' => '#f56565',
+                    'text_color' => '#2d3748',
+                    'background_color' => '#ffffff',
+                    'font_family' => 'Tajawal',
+                    'heading_font' => 'Tajawal',
+                    'button_style' => 'rounded',
+                    'layout_style' => 'modern'
+                ]
+            ];
+        }
+
+        return (object) [
+            'design_settings' => json_decode($activePage->design_settings ?? '{}', true) ?: [],
+            'template_settings' => json_decode($activePage->template_settings ?? '{}', true) ?: []
+        ];
     }
 }

@@ -8,7 +8,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use App\Services\LocaleService;
+use App\Services\FacilityPageService;
 use Illuminate\Support\Facades\Request;
+use App\Models\Product;
+use App\Observers\ProductObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,12 +21,21 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LocaleService::class);
+        $this->app->singleton(FacilityPageService::class);
 
         // Register OpenAI Client
         $this->app->singleton(\OpenAI\Client::class, function ($app) {
-            return \OpenAI\Client::factory()
-                ->withApiKey(config('services.openai.api_key'))
-                ->withBaseUri('https://api.openai.com/v1/')
+            $apiKey = config('services.openai.api_key');
+            if (empty($apiKey)) {
+                throw new \RuntimeException('OpenAI API key is not set. Please add OPENAI_API_KEY to your .env file.');
+            }
+            
+            return \OpenAI::factory()
+                ->withApiKey($apiKey)
+                ->withHttpClient(new \GuzzleHttp\Client([
+                    'verify' => false,  // تجاوز التحقق من شهادة SSL
+                    'timeout' => 30
+                ]))
                 ->make();
         });
     }
@@ -33,11 +45,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Product::observe(ProductObserver::class);
+
+
+
+ 
         // تسجيل المكونات
         $this->loadViewComponentsAs('', [
             \App\View\Components\FacilitiesList::class,
             \App\View\Components\ProductList::class,
             \App\View\Components\LanguageSwitcher::class,
+            \App\View\Components\ApplicationLogo::class, // شعار التطبيق
+            \App\View\Components\AppLayout::class
         ]);
 
         // تسجيل مترجم مخصص

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\FacilityTemplate;
 use Illuminate\Database\Seeder;
-use App\Models\PageTemplate;
 
 class FacilityTemplateSeeder extends Seeder
 {
@@ -11,225 +11,70 @@ class FacilityTemplateSeeder extends Seeder
     {
         $templates = [
             [
-                'name' => 'القالب الأساسي',
-                'slug' => 'basic',
-                'description' => 'قالب بسيط وأنيق يناسب جميع أنواع المنشآت',
-                'thumbnail' => 'templates/basic.jpg',
-                'sections' => [
+                'name' => 'Modern Store',
+                'slug' => 'modern-store',
+                'thumbnail' => 'templates/modern-store.jpg',
+                'preview_url' => 'templates/modern-store/preview',
+                'supported_components' => json_encode([
+                    'hero-slider',
+                    'featured-products',
+                    'categories-grid',
+                    'testimonials',
+                    'instagram-feed',
+                    'contact-form'
+                ]),
+                'default_settings' => json_encode([
+                    'layout' => 'modern',
+                    'rtl_support' => true,
+                    'show_cart' => true,
+                    'show_wishlist' => true
+                ]),
+                'style_settings' => json_encode([
+                    'primary_color' => '#2C3E50',
+                    'secondary_color' => '#E74C3C',
+                    'font_family' => 'Cairo',
+                    'header_style' => 'transparent'
+                ]),
+                'layout_settings' => json_encode([
                     'header' => [
-                        'order' => 1,
-                        'settings' => [
-                            'show_search' => true,
-                            'show_cta' => true,
-                            'style' => 'modern'
-                        ]
+                        'style' => 'transparent',
+                        'show_search' => true,
+                        'show_cart' => true
                     ],
-                    'about' => [
-                        'order' => 2,
-                        'settings' => [
-                            'layout' => 'side-by-side',
-                            'show_stats' => true
-                        ]
+                    'footer' => [
+                        'style' => 'dark',
+                        'columns' => 4
                     ],
-                    'services' => [
-                        'order' => 3,
-                        'settings' => [
-                            'columns' => 3,
-                            'show_icons' => true
-                        ]
-                    ],
-                    'gallery' => [
-                        'order' => 4,
-                        'settings' => [
-                            'layout' => 'grid',
-                            'columns' => 4
-                        ]
-                    ],
-                    'testimonials' => [
-                        'order' => 5,
-                        'settings' => [
-                            'style' => 'carousel',
-                            'show_rating' => true
-                        ]
-                    ],
-                    'contact' => [
-                        'order' => 6,
-                        'settings' => [
-                            'show_map' => true,
-                            'show_form' => true
-                        ]
+                    'sidebar' => [
+                        'position' => 'right',
+                        'widgets' => ['categories', 'tags', 'featured']
                     ]
-                ],
-                'styles' => [
-                    'colors' => [
-                        'primary' => '#2563eb',
-                        'secondary' => '#475569',
-                        'accent' => '#f59e0b'
-                    ],
-                    'fonts' => [
-                        'heading' => 'Cairo',
-                        'body' => 'Tajawal'
-                    ]
-                ]
+                ])
             ],
-            [
-                'name' => 'قالب الفنادق والمنتجعات',
-                'slug' => 'hotel',
-                'description' => 'قالب متخصص للفنادق والمنتجعات مع نظام حجز متكامل',
-                'thumbnail' => 'templates/hotel.jpg',
-                'sections' => [
-                    'header' => [
-                        'order' => 1,
-                        'settings' => [
-                            'show_booking' => true,
-                            'show_video' => true,
-                            'style' => 'fullscreen'
-                        ]
-                    ],
-                    'rooms' => [
-                        'order' => 2,
-                        'settings' => [
-                            'layout' => 'grid',
-                            'show_prices' => true,
-                            'show_availability' => true
-                        ]
-                    ],
-                    'amenities' => [
-                        'order' => 3,
-                        'settings' => [
-                            'layout' => 'icons-grid',
-                            'columns' => 4
-                        ]
-                    ],
-                    'dining' => [
-                        'order' => 4,
-                        'settings' => [
-                            'layout' => 'carousel',
-                            'show_menu' => true
-                        ]
-                    ],
-                    'spa' => [
-                        'order' => 5,
-                        'settings' => [
-                            'layout' => 'side-by-side',
-                            'show_services' => true
-                        ]
-                    ],
-                    'gallery' => [
-                        'order' => 6,
-                        'settings' => [
-                            'layout' => 'masonry',
-                            'columns' => 3
-                        ]
-                    ],
-                    'reviews' => [
-                        'order' => 7,
-                        'settings' => [
-                            'style' => 'cards',
-                            'show_rating' => true
-                        ]
-                    ],
-                    'location' => [
-                        'order' => 8,
-                        'settings' => [
-                            'show_map' => true,
-                            'show_directions' => true
-                        ]
-                    ]
-                ],
-                'styles' => [
-                    'colors' => [
-                        'primary' => '#1e40af',
-                        'secondary' => '#334155',
-                        'accent' => '#c2410c'
-                    ],
-                    'fonts' => [
-                        'heading' => 'Aref Ruqaa',
-                        'body' => 'Almarai'
-                    ]
-                ]
-            ],
-            [
-                'name' => 'قالب المطاعم والمقاهي',
-                'slug' => 'restaurant',
-                'description' => 'قالب مخصص للمطاعم والمقاهي مع عرض القوائم والحجوزات',
-                'thumbnail' => 'templates/restaurant.jpg',
-                'sections' => [
-                    'header' => [
-                        'order' => 1,
-                        'settings' => [
-                            'show_reservation' => true,
-                            'show_hours' => true,
-                            'style' => 'parallax'
-                        ]
-                    ],
-                    'menu' => [
-                        'order' => 2,
-                        'settings' => [
-                            'layout' => 'tabs',
-                            'show_prices' => true,
-                            'show_images' => true
-                        ]
-                    ],
-                    'specials' => [
-                        'order' => 3,
-                        'settings' => [
-                            'layout' => 'carousel',
-                            'show_timer' => true
-                        ]
-                    ],
-                    'gallery' => [
-                        'order' => 4,
-                        'settings' => [
-                            'layout' => 'grid',
-                            'columns' => 3
-                        ]
-                    ],
-                    'chefs' => [
-                        'order' => 5,
-                        'settings' => [
-                            'layout' => 'cards',
-                            'show_bio' => true
-                        ]
-                    ],
-                    'testimonials' => [
-                        'order' => 6,
-                        'settings' => [
-                            'style' => 'quotes',
-                            'show_rating' => true
-                        ]
-                    ],
-                    'reservation' => [
-                        'order' => 7,
-                        'settings' => [
-                            'show_calendar' => true,
-                            'show_time_slots' => true
-                        ]
-                    ],
-                    'contact' => [
-                        'order' => 8,
-                        'settings' => [
-                            'show_map' => true,
-                            'show_hours' => true
-                        ]
-                    ]
-                ],
-                'styles' => [
-                    'colors' => [
-                        'primary' => '#b91c1c',
-                        'secondary' => '#44403c',
-                        'accent' => '#ca8a04'
-                    ],
-                    'fonts' => [
-                        'heading' => 'Lateef',
-                        'body' => 'IBM Plex Sans Arabic'
-                    ]
-                ]
-            ]
+            // يمكن إضافة المزيد من القوالب هنا
         ];
 
         foreach ($templates as $template) {
-            PageTemplate::create($template);
+            $newTemplate = FacilityTemplate::create([
+                'name' => $template['name'],
+                'slug' => $template['slug'],
+                'thumbnail' => $template['thumbnail'],
+                'preview_url' => $template['preview_url'],
+                'supported_components' => $template['supported_components'],
+                'default_settings' => $template['default_settings'],
+                'style_settings' => $template['style_settings'],
+                'layout_settings' => $template['layout_settings'],
+                'is_active' => true
+            ]);
+
+            // إضافة الترجمات
+            $newTemplate->translateOrNew('ar')->name = 'متجر عصري';
+            $newTemplate->translateOrNew('ar')->description = 'قالب عصري للمتاجر الإلكترونية';
+            
+            $newTemplate->translateOrNew('en')->name = 'Modern Store';
+            $newTemplate->translateOrNew('en')->description = 'Modern template for e-commerce stores';
+            
+            $newTemplate->save();
         }
     }
 }

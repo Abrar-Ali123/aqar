@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,19 +8,51 @@
     <title>{{ config('app.name', 'Laravel') }}</title>
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    @livewireStyles
+
+    <!-- Vite Assets -->
+    @if(env('APP_ENV') === 'local')
+        @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @else
+        <link href="{{ asset('build/assets/app.css') }}" rel="stylesheet">
+        <script src="{{ asset('build/assets/app.js') }}" defer></script>
+    @endif
+    
+    <!-- Error Handling -->
+    <script>
+        window.addEventListener('error', function(e) {
+            console.error('Resource loading error:', e);
+        });
+    </script>
+
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            direction: rtl;
+        }
+    </style>
 
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
-</head>
-<body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100">
-        <main>
-            {{ $slot }}
-        </main>
-    </div>
     @livewireScripts
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+</head>
+<body class="font-sans text-gray-900 antialiased">
+    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
+        <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+            @yield('content')
+        </div>
+    </div>
+
+
 </body>
 </html>

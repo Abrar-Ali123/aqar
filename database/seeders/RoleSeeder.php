@@ -2,54 +2,78 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class RoleSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
         $roles = [
             [
+                'name' => [
+                    'ar' => 'مدير النظام',
+                    'en' => 'Admin'
+                ],
+                'level' => 1,
                 'is_primary' => true,
                 'is_paid' => false,
-                'price' => 0.00,
+                'price' => null,
+                'parent_id' => null,
                 'facility_id' => null,
-                'permission_id' => DB::table('permissions')->where('guard_name', 'web')->first()->id,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'permission_id' => null
             ],
             [
-                'is_primary' => false,
-                'is_paid' => true,
-                'price' => 99.99,
+                'name' => [
+                    'ar' => 'مشرف',
+                    'en' => 'Moderator'
+                ],
+                'level' => 2,
+                'is_primary' => true,
+                'is_paid' => false,
+                'price' => null,
+                'parent_id' => 1,
                 'facility_id' => null,
-                'permission_id' => DB::table('permissions')->where('guard_name', 'web')->skip(1)->first()->id,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'permission_id' => null
+            ],
+            [
+                'name' => [
+                    'ar' => 'صاحب منشأة',
+                    'en' => 'Facility Owner'
+                ],
+                'level' => 3,
+                'is_primary' => true,
+                'is_paid' => false,
+                'price' => null,
+                'parent_id' => 2,
+                'facility_id' => null,
+                'permission_id' => null
+            ],
+            [
+                'name' => [
+                    'ar' => 'مستخدم',
+                    'en' => 'User'
+                ],
+                'level' => 4,
+                'is_primary' => true,
+                'is_paid' => false,
+                'price' => null,
+                'parent_id' => null,
+                'facility_id' => null,
+                'permission_id' => null
             ]
         ];
 
-        foreach ($roles as $index => $role) {
-            $roleId = DB::table('roles')->insertGetId($role);
+        foreach ($roles as $roleData) {
+            $translations = $roleData['name'];
+            unset($roleData['name']);
             
-            // Add translations
-            DB::table('role_translations')->insert([
-                [
-                    'role_id' => $roleId,
-                    'locale' => 'ar',
-                    'name' => $index === 0 ? 'مدير النظام' : 'مستخدم مميز',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ],
-                [
-                    'role_id' => $roleId,
-                    'locale' => 'en',
-                    'name' => $index === 0 ? 'System Admin' : 'Premium User',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            ]);
+            $role = Role::create($roleData);
+            
+            foreach ($translations as $locale => $name) {
+                $role->translateOrNew($locale)->name = $name;
+            }
+            $role->save();
         }
     }
 }

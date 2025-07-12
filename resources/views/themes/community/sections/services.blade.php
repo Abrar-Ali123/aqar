@@ -93,7 +93,7 @@
             <div class="cta-box bg-primary text-white rounded-3 p-5">
                 <h3 class="mb-4">{{ __('pages.join_community_title') }}</h3>
                 <p class="mb-4">{{ __('pages.join_community_desc') }}</p>
-                <a href="{{ route('register', ['locale' => app()->getLocale()]) }}" 
+
                    class="btn btn-light btn-lg">
                     {{ __('pages.get_started') }}
                 </a>

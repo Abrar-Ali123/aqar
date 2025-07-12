@@ -15,10 +15,12 @@ return new class extends Migration
             $table->unsignedTinyInteger('rating'); // 1-5
             $table->text('comment')->nullable();
             $table->boolean('is_approved')->default(false);
+            $table->unsignedBigInteger('facility_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('facility_id')->references('id')->on('facilities')->onDelete('cascade');
         });
     }
 

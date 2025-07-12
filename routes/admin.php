@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\{
 };
 
 // مسارات لوحة التحكم
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'authorize:role,admin'])->prefix('admin')->name('admin.')->group(function () {
     // الرئيسية
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     

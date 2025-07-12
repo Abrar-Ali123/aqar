@@ -5,7 +5,7 @@
     <div class="container">
         <h1 class="display-4 fw-bold mb-4">{{ __('pages.business_title') }}</h1>
         <p class="lead mb-5">{{ __('pages.business_subtitle') }}</p>
-        <a href="{{ route('register', ['locale' => app()->getLocale()]) }}" class="btn btn-lg btn-warning px-5 py-3 shadow">
+
             <i class="fas fa-store me-2"></i> {{ __('pages.start_business') }}
         </a>
     </div>

@@ -8,75 +8,49 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Facility;
 use App\Models\Product;
-use App\Models\ProductTranslation;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
+use App\Services\ProductService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function __construct()
+    public function __construct(protected ProductService $productService)
     {
-        // لا يوجد middleware
+        // يمكنك إضافة middleware هنا إذا احتجت
+        // مثال: $this->middleware('auth')->except(['index', 'show', 'search']);
     }
 
     public function index(Request $request): View
     {
         $locale = app()->getLocale();
-        
-        // Get products with their translations
-        $query = Product::query()
-            ->select('products.*')
-            ->join('product_translations', 'products.id', '=', 'product_translations.product_id')
-            ->where('product_translations.locale', $locale)
-            ->where('products.is_active', true);
 
-        // البحث حسب الاسم
-        if ($request->filled('search')) {
-            $query->where('product_translations.name', 'like', '%' . $request->search . '%');
-        }
-
-        // التصفية حسب الفئة
-        if ($request->filled('category_id')) {
-            $query->where('products.category_id', $request->category_id);
-        }
-
-        // Get categories with their translations
-        $categories = Category::query()
-            ->select([
-                'categories.id',
-                'category_translations.name'
-            ])
-            ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
-            ->where('category_translations.locale', $locale)
-            ->withCount('products')
-            ->get();
-
-        // Get products with their relations
-        $products = $query
+        $products = Product::filter($request->all())
             ->with([
-                'facility' => function($q) use ($locale) {
-                    $q->select([
-                        'facilities.id',
-                        'facility_translations.name'
-                    ])
-                    ->join('facility_translations', 'facilities.id', '=', 'facility_translations.facility_id')
-                    ->where('facility_translations.locale', $locale);
+                'facility' => function ($q) use ($locale) {
+                    $q->select(['facilities.id', 'facility_translations.name'])
+                        ->join('facility_translations', 'facilities.id', '=', 'facility_translations.facility_id')
+                        ->where('facility_translations.locale', $locale);
                 },
-                'category' => function($q) use ($locale) {
-                    $q->select([
-                        'categories.id',
-                        'category_translations.name'
-                    ])
-                    ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
-                    ->where('category_translations.locale', $locale);
+                'category' => function ($q) use ($locale) {
+                    $q->select(['categories.id', 'category_translations.name'])
+                        ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
+                        ->where('category_translations.locale', $locale);
                 },
-                'translations' => function($q) use ($locale) {
+                'translations' => function ($q) use ($locale) {
                     $q->where('locale', $locale);
                 }
             ])
             ->latest()
             ->paginate(12);
+
+        $categories = Category::query()
+            ->select(['categories.id', 'category_translations.name'])
+            ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
+            ->where('category_translations.locale', $locale)
+            ->withCount('products')
+            ->get();
 
         return view('products.index', [
             'products' => $products,
@@ -97,82 +71,12 @@ class ProductController extends Controller
         return view('dashboard.products.create', compact('allTypes'));
     }
 
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $request->validate([
-            'translations.*.name' => 'required|string|max:255',
-            'translations.*.description' => 'nullable|string',
-            'type' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'facility_id' => 'nullable|exists:facilities,id',
-            'thumbnail' => 'nullable|image|max:2048',
-            'media.*' => 'nullable|file|max:10240',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'google_maps_url' => 'nullable|url'
-        ]);
-
-        $product = new Product();
-        $product->fill($request->only([
-            'type',
-            'price',
-            'category_id',
-            'facility_id',
-            'latitude',
-            'longitude',
-            'google_maps_url'
-        ]));
-
-        $product->is_active = $request->boolean('is_active', true);
-        $product->sku = $this->generateSku();
-        $product->owner_user_id = auth()->id();
-        $product->seller_user_id = $request->seller_user_id ?? auth()->id();
-
-        // معالجة الصورة الرئيسية
-        if ($request->hasFile('thumbnail')) {
-            $product->thumbnail = $request->file('thumbnail')->store('products/thumbnails', 'public');
-        }
-
-        // معالجة الوسائط
-        if ($request->hasFile('media')) {
-            $mediaFiles = [];
-            foreach ($request->file('media') as $file) {
-                $mediaFiles[] = [
-                    'path' => $file->store('products/media', 'public'),
-                    'type' => $file->getClientMimeType(),
-                    'name' => $file->getClientOriginalName()
-                ];
-            }
-            $product->media = $mediaFiles;
-        }
-
-        $product->save();
-
-        // حفظ الترجمات
-        foreach ($request->translations as $locale => $translation) {
-            ProductTranslation::create([
-                'product_id' => $product->id,
-                'locale' => $locale,
-                'name' => $translation['name'],
-                'description' => $translation['description'] ?? null
-            ]);
-        }
-
-        // حفظ قيم الخصائص
-        if ($request->has('attributes')) {
-            foreach ($request->attributes as $attributeId => $value) {
-                $attribute = Attribute::findOrFail($attributeId);
-                $processedValue = $this->processAttributeValue($attribute, $value);
-                $product->attributeValues()->create([
-                    'attribute_id' => $attributeId,
-                    'value' => $processedValue
-                ]);
-            }
-        }
+        $product = $this->productService->createProduct($request);
 
         return redirect()
-            ->route('products.show', $product)
+            ->route('products.show', ['product' => $product->id, 'locale' => app()->getLocale()])
             ->with('success', 'تم إنشاء المنتج بنجاح');
     }
 
@@ -202,6 +106,7 @@ class ProductController extends Controller
     public function edit($id)
     {
         $product = Product::findOrFail($id);
+        $product = Product::findOrFail($id);
         $staticTypes = collect(ProductType::cases())->map(fn($t) => [
             'key' => $t->value,
             'label' => $t->label(),
@@ -211,135 +116,66 @@ class ProductController extends Controller
         return view('dashboard.products.edit', compact('product', 'allTypes'));
     }
 
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
-        $request->validate([
-            'translations.*.name' => 'required|string|max:255',
-            'translations.*.description' => 'nullable|string',
-            'type' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'facility_id' => 'nullable|exists:facilities,id',
-            'thumbnail' => 'nullable|image|max:2048',
-            'media.*' => 'nullable|file|max:10240',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'google_maps_url' => 'nullable|url'
-        ]);
-
-        $product->fill($request->only([
-            'type',
-            'price',
-            'category_id',
-            'facility_id',
-            'latitude',
-            'longitude',
-            'google_maps_url'
-        ]));
-
-        $product->is_active = $request->boolean('is_active', true);
-        $product->seller_user_id = $request->seller_user_id ?? $product->seller_user_id;
-
-        // معالجة الصورة الرئيسية
-        if ($request->hasFile('thumbnail')) {
-            // حذف الصورة القديمة
-            if ($product->thumbnail) {
-                Storage::disk('public')->delete($product->thumbnail);
-            }
-            $product->thumbnail = $request->file('thumbnail')->store('products/thumbnails', 'public');
-        }
-
-        // معالجة الوسائط
-        if ($request->hasFile('media')) {
-            // حذف الوسائط القديمة
-            if (!empty($product->media)) {
-                foreach ($product->media as $media) {
-                    Storage::disk('public')->delete($media['path']);
-                }
-            }
-            
-            $mediaFiles = [];
-            foreach ($request->file('media') as $file) {
-                $mediaFiles[] = [
-                    'path' => $file->store('products/media', 'public'),
-                    'type' => $file->getClientMimeType(),
-                    'name' => $file->getClientOriginalName()
-                ];
-            }
-            $product->media = $mediaFiles;
-        }
-
-        $product->save();
-
-        // تحديث الترجمات
-        foreach ($request->translations as $locale => $translation) {
-            $product->translations()->updateOrCreate(
-                ['locale' => $locale],
-                [
-                    'name' => $translation['name'],
-                    'description' => $translation['description'] ?? null
-                ]
-            );
-        }
-
-        // تحديث قيم الخصائص
-        $product->attributeValues()->delete();
-        if ($request->has('attributes')) {
-            foreach ($request->attributes as $attributeId => $value) {
-                $attribute = Attribute::findOrFail($attributeId);
-                $processedValue = $this->processAttributeValue($attribute, $value);
-                $product->attributeValues()->create([
-                    'attribute_id' => $attributeId,
-                    'value' => $processedValue
-                ]);
-            }
-        }
+        $product = $this->productService->updateProduct($product, $request);
 
         return redirect()
-            ->route('products.show', $product)
+            ->route('products.show', ['product' => $product->id, 'locale' => app()->getLocale()])
             ->with('success', 'تم تحديث المنتج بنجاح');
     }
 
     public function destroy(Product $product)
     {
-        // حذف الملفات
-        if ($product->thumbnail) {
-            Storage::disk('public')->delete($product->thumbnail);
-        }
-        
-        if (!empty($product->media)) {
-            foreach ($product->media as $media) {
-                Storage::disk('public')->delete($media['path']);
-            }
-        }
-
-        $product->delete();
+        $this->productService->deleteProduct($product);
 
         return redirect()
-            ->route('products.index')
+            ->route('products.index', ['locale' => app()->getLocale()])
             ->with('success', 'تم حذف المنتج بنجاح');
     }
 
-    protected function processAttributeValue($attribute, $value)
+
+
+    public function search(Request $request): View
     {
-        switch ($attribute->type) {
-            case 'number':
-                return floatval($value);
-            case 'boolean':
-                return filter_var($value, FILTER_VALIDATE_BOOLEAN);
-            case 'date':
-                return date('Y-m-d', strtotime($value));
-            default:
-                return $value;
-        }
+        $locale = app()->getLocale();
+
+        $products = Product::filter($request->all())
+            ->with([
+                'facility' => function ($q) use ($locale) {
+                    $q->select(['facilities.id', 'facility_translations.name'])
+                        ->join('facility_translations', 'facilities.id', '=', 'facility_translations.facility_id')
+                        ->where('facility_translations.locale', $locale);
+                },
+                'category' => function ($q) use ($locale) {
+                    $q->select(['categories.id', 'category_translations.name'])
+                        ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
+                        ->where('category_translations.locale', $locale);
+                },
+                'translations' => function ($q) use ($locale) {
+                    $q->where('locale', $locale);
+                }
+            ])
+            ->latest()
+            ->paginate(12);
+
+        $categories = Category::query()
+            ->select(['categories.id', 'category_translations.name'])
+            ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
+            ->where('category_translations.locale', $locale)
+            ->withCount('products')
+            ->get();
+
+        return view('products.search', [
+            'products' => $products,
+            'categories' => $categories,
+            'search_query' => $request->q,
+            'selected_category' => $request->category,
+            'min_price' => $request->min_price,
+            'max_price' => $request->max_price,
+            'selected_facility' => $request->facility
+        ]);
     }
 
-    protected function generateSku()
-    {
-        $prefix = 'PRD';
-        $timestamp = now()->format('ymd');
-        $random = str_pad(random_int(0, 999), 3, '0', STR_PAD_LEFT);
-        
-        return "{$prefix}{$timestamp}{$random}";
-    }
+
 }

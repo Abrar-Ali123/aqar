@@ -112,14 +112,25 @@ class FacilityPage extends Model
      */
     public function updateStats(): void
     {
-        $stats = [
-            'views' => $this->visits()->count(),
-            'reviews' => $this->reviews()->count(),
-            'avg_rating' => $this->reviews()->avg('rating') ?? 0,
-            'last_visit' => $this->visits()->latest()->first()?->created_at,
-        ];
+        try {
+            $stats = [
+                'views' => $this->visits()->count(),
+                'reviews' => $this->reviews()->count(),
+                'avg_rating' => $this->reviews()->avg('rating') ?? 0,
+                'last_visit' => $this->visits()->latest()->first()?->created_at,
+            ];
 
-        $this->update(['meta->stats' => $stats]);
-        $this->clearSectionCache('stats');
+            $meta = $this->meta ?? collect([]);
+            $meta['stats'] = $stats;
+            $this->meta = $meta;
+            $this->save();
+            
+            $this->clearSectionCache('stats');
+        } catch (\Exception $e) {
+            \Log::error('Error updating page stats:', [
+                'page_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

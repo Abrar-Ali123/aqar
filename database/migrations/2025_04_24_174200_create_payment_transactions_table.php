@@ -14,9 +14,12 @@ return new class extends Migration
             $table->string('status')->default('pending');
             $table->decimal('amount', 12, 2);
             $table->string('currency', 8)->default('SAR');
+            $table->boolean('is_cod')->default(false);
             $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('shipping_company_id')->nullable();
             $table->json('details')->nullable();
             $table->timestamps();
+            $table->foreign('shipping_company_id')->references('id')->on('shipping_companies')->onDelete('set null');
         });
     }
     public function down(): void

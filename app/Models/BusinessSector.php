@@ -3,23 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
+use Astrotomic\Translatable\Translatable;
 
-class BusinessSector extends Model
-{
+class BusinessSector extends Model implements TranslatableContract
+{    
+    use Translatable;
+
+    public array $translatedAttributes = ['name', 'description'];
     protected $fillable = [
-        'name',
-        'name_en',
-        'slug',
         'icon',
-        'description',
-        'description_en',
         'is_active',
-        'sort_order'
+        'order'
     ];
 
     protected $casts = [
         'is_active' => 'boolean'
     ];
+
+
 
     public function categories()
     {

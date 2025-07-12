@@ -199,6 +199,72 @@
                 </li>
 
                 <li class="nav-item">
+                    <a class="nav-link menu-link collapsed" href="#sidebarUsers" data-bs-toggle="collapse"
+                        role="button" aria-expanded="false" aria-controls="sidebarUsers">
+                        <i class="ti ti-users"></i> <span>إدارة المستخدمين</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarUsers">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.users.index') }}" class="nav-link">عرض المستخدمين</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.users.create') }}" class="nav-link">إضافة مستخدم</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.users.blocked') }}" class="nav-link">المستخدمين المحظورين</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link collapsed" href="#sidebarReports" data-bs-toggle="collapse"
+                        role="button" aria-expanded="false" aria-controls="sidebarReports">
+                        <i class="ti ti-report-analytics"></i> <span>التقارير والتحليلات</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarReports">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.reports.sales') }}" class="nav-link">تقارير المبيعات</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.reports.users') }}" class="nav-link">تقارير المستخدمين</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.reports.content') }}" class="nav-link">تقارير المحتوى</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.reports.performance') }}" class="nav-link">تقارير الأداء</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link collapsed" href="#sidebarNotifications" data-bs-toggle="collapse"
+                        role="button" aria-expanded="false" aria-controls="sidebarNotifications">
+                        <i class="ti ti-bell"></i> <span>الإشعارات</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarNotifications">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.notifications.send') }}" class="nav-link">إرسال إشعار</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.notifications.templates') }}" class="nav-link">قوالب الإشعارات</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.notifications.history') }}" class="nav-link">سجل الإشعارات</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.notifications.settings') }}" class="nav-link">إعدادات الإشعارات</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="nav-item">
                     <a class="nav-link menu-link" href="#">
                         <i class="ti ti-user"></i> <span>الملف الشخصي</span>
                     </a>

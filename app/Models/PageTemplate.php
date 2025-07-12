@@ -68,15 +68,15 @@ class PageTemplate extends Model implements HasMedia, Searchable
         });
 
         static::created(function ($template) {
-            Cache::tags(['templates'])->flush();
+            Cache::flush();
         });
 
         static::updated(function ($template) {
-            Cache::tags(['templates'])->flush();
+            Cache::flush();
         });
 
         static::deleted(function ($template) {
-            Cache::tags(['templates'])->flush();
+            Cache::flush();
         });
     }
 
@@ -144,6 +144,14 @@ class PageTemplate extends Model implements HasMedia, Searchable
     public function pages()
     {
         return $this->hasMany(FacilityPage::class, 'template_id');
+    }
+
+    /**
+     * Get the sections in this template.
+     */
+    public function sections()
+    {
+        return $this->hasMany(TemplateSection::class, 'template_id')->orderBy('order');
     }
 
     /**

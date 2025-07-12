@@ -172,7 +172,7 @@
                         <a href="{{ route('products.index') }}" class="btn btn-primary me-2">
                             {{ __('تصفح المنتجات') }}
                         </a>
-                        <a href="{{ route('facilities.index') }}" class="btn btn-outline-primary">
+                        <a href="{{ route('facilities.index', ['locale' => app()->getLocale()]) }}" class="btn btn-outline-primary">
                             {{ __('تصفح المنشآت') }}
                         </a>
                     </div>

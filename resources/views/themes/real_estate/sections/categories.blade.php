@@ -27,7 +27,7 @@
                             {{ $category->locations_count }} {{ __('pages.locations') }}
                         </span>
                     </div>
-                    <a href="{{ route('categories.show', ['locale' => app()->getLocale(), 'category' => $category->id]) }}" 
+                    <a href="{{ route('categories.show', [app()->getLocale(), $category->id]) }}" 
                        class="stretched-link"></a>
                 </div>
             </div>
@@ -35,7 +35,7 @@
         </div>
 
         <div class="text-center mt-5">
-            <a href="{{ route('categories.index', ['locale' => app()->getLocale()]) }}" 
+            <a href="{{ route('categories.index', app()->getLocale()) }}" 
                class="btn btn-outline-primary">
                 {{ __('pages.view_all_categories') }}
                 <i class="fas fa-arrow-right me-2"></i>

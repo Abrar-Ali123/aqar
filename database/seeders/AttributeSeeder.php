@@ -2,74 +2,66 @@
 
 namespace Database\Seeders;
 
+use App\Models\Attribute;
+use App\Models\AttributeTranslation;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class AttributeSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        // Get first category ID
-        $categoryId = DB::table('categories')->first()->id;
-
         $attributes = [
             [
-                'type' => 'select',
-                'required' => true,
-                'category_id' => $categoryId,
-                'icon' => 'fas fa-home',
-                'Symbol' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'type' => 'select',
-                'required' => true,
-                'category_id' => $categoryId,
-                'icon' => 'fas fa-compass',
-                'Symbol' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
+                'name' => [
+                    'ar' => 'المساحة',
+                    'en' => 'Area'
+                ],
                 'type' => 'number',
                 'required' => true,
-                'category_id' => $categoryId,
-                'icon' => 'fas fa-ruler-combined',
-                'Symbol' => 'm²',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'category_id' => 1,
+                'icon' => 'area-icon',
+                'Symbol' => 'm²'
             ],
+            [
+                'name' => [
+                    'ar' => 'عدد الغرف',
+                    'en' => 'Rooms'
+                ],
+                'type' => 'number',
+                'required' => true,
+                'category_id' => 1,
+                'icon' => 'room-icon',
+                'Symbol' => null
+            ],
+            [
+                'name' => [
+                    'ar' => 'الموقع',
+                    'en' => 'Location'
+                ],
+                'type' => 'text',
+                'required' => true,
+                'category_id' => 1,
+                'icon' => 'location-icon',
+                'Symbol' => null
+            ]
         ];
 
-        foreach ($attributes as $index => $attribute) {
-            $attributeId = DB::table('attributes')->insertGetId($attribute);
-            
-            // Add translations
-            DB::table('attribute_translations')->insert([
-                [
-                    'attribute_id' => $attributeId,
-                    'locale' => 'ar',
-                    'name' => match($index) {
-                        0 => 'حالة العقار',
-                        1 => 'الواجهة',
-                        2 => 'المساحة',
-                        default => 'خاصية ' . ($index + 1),
-                    },
-                    'symbol' => $attribute['Symbol'],
-                ],
-                [
-                    'attribute_id' => $attributeId,
-                    'locale' => 'en',
-                    'name' => match($index) {
-                        0 => 'Property Condition',
-                        1 => 'Facing Direction',
-                        2 => 'Area',
-                        default => 'Attribute ' . ($index + 1),
-                    },
-                    'symbol' => $attribute['Symbol'],
-                ]
+        foreach ($attributes as $attributeData) {
+            $attribute = Attribute::create([
+                'type' => $attributeData['type'],
+                'required' => $attributeData['required'],
+                'category_id' => $attributeData['category_id'],
+                'icon' => $attributeData['icon'],
+                'Symbol' => $attributeData['Symbol']
             ]);
+
+            foreach (['ar', 'en'] as $locale) {
+                AttributeTranslation::create([
+                    'attribute_id' => $attribute->id,
+                    'locale' => $locale,
+                    'name' => $attributeData['name'][$locale]
+                ]);
+            }
         }
     }
 }

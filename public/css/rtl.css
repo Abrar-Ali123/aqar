@@ -1,4 +1,10 @@
 /* تعديلات RTL */
+body {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Cairo', sans-serif;
+}
+
 [dir="rtl"] {
     text-align: right;
 }

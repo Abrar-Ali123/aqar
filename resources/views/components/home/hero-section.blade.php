@@ -39,7 +39,7 @@
         <div class="swiper-button-next"></div>
     </div>
     <div class="hero-search">
-        <form action="{{ route('search.results', ['locale' => app()->getLocale()]) }}" method="GET" class="search-form shadow-lg">
+        <form action="{{ route('products.search', ['locale' => app()->getLocale()]) }}" method="GET" class="search-form shadow-lg">
             <div class="input-group">
                 <input type="text" 
                        class="form-control form-control-lg" 

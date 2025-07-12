@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Role;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\Language;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rules\Password;
+use App\Models\Role;
+use App\Models\User;
+use App\Services\UserService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index()
+    public function __construct(protected UserService $userService)
+    {
+    }
+
+    public function index(): View
     {
         if (!auth()->user()->can('view users')) {
             return redirect()->back()->with('error', __('messages.unauthorized_action'));
@@ -26,7 +31,7 @@ class UserController extends Controller
         return view('admin.users.index', compact('users'));
     }
 
-    public function create()
+    public function create(): View
     {
         if (!auth()->user()->can('create users')) {
             return redirect()->back()->with('error', __('messages.unauthorized_action'));
@@ -37,67 +42,21 @@ class UserController extends Controller
         return view('admin.users.create', compact('roles', 'languages'));
     }
 
-    public function store(Request $request)
+    public function store(StoreUserRequest $request): RedirectResponse
     {
-        if (!auth()->user()->can('create users')) {
-            return redirect()->back()->with('error', __('messages.unauthorized_action'));
-        }
-
-        $rules = $this->getValidationRules();
-        $validated = $request->validate($rules);
-
         try {
-            DB::transaction(function () use ($request, $validated) {
-                // إنشاء المستخدم
-                $user = User::create([
-                    'email' => $request->email,
-                    'username' => $request->username,
-                    'phone' => $request->phone,
-                    'password' => Hash::make($request->password),
-                    'is_active' => $request->boolean('is_active'),
-                    'status' => $request->status ?? 'active',
-                ]);
-
-                // حفظ الترجمات
-                foreach ($validated['first_name'] as $locale => $firstName) {
-                    if ($firstName || Language::where('code', $locale)->value('is_required')) {
-                        $user->translations()->create([
-                            'locale' => $locale,
-                            'first_name' => $firstName,
-                            'last_name' => $validated['last_name'][$locale] ?? null,
-                            'bio' => $validated['bio'][$locale] ?? null,
-                            'address' => $validated['address'][$locale] ?? null,
-                        ]);
-                    }
-                }
-
-                // معالجة الصورة الشخصية
-                if ($request->hasFile('avatar')) {
-                    $path = $request->file('avatar')->store('users/avatars', 'public');
-                    $user->update(['avatar' => $path]);
-                }
-
-                // إضافة الأدوار
-                if ($request->has('roles')) {
-                    $user->roles()->sync($request->roles);
-                }
-
-                // إضافة الإعدادات
-                if ($request->has('settings')) {
-                    $user->settings()->create($request->settings);
-                }
-            });
-
+            $this->userService->createUser($request->validated());
             return redirect()->route('admin.users.index')
                 ->with('success', __('messages.user_created_successfully'));
         } catch (\Exception $e) {
+            Log::error('User creation failed: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', __('messages.user_create_error'))
                 ->withInput();
         }
     }
 
-    public function edit(User $user)
+    public function edit(User $user): View
     {
         if (!auth()->user()->can('edit users')) {
             return redirect()->back()->with('error', __('messages.unauthorized_action'));
@@ -117,132 +76,39 @@ class UserController extends Controller
         ));
     }
 
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
-        if (!auth()->user()->can('edit users')) {
-            return redirect()->back()->with('error', __('messages.unauthorized_action'));
-        }
-
-        $rules = $this->getValidationRules($user->id);
-        if ($request->filled('password')) {
-            $rules['password'] = ['required', 'confirmed', Password::defaults()];
-        }
-        $validated = $request->validate($rules);
-
         try {
-            DB::transaction(function () use ($request, $user, $validated) {
-                // تحديث المستخدم
-                $userData = [
-                    'email' => $request->email,
-                    'username' => $request->username,
-                    'phone' => $request->phone,
-                    'is_active' => $request->boolean('is_active'),
-                    'status' => $request->status ?? $user->status,
-                ];
-
-                if ($request->filled('password')) {
-                    $userData['password'] = Hash::make($request->password);
-                }
-
-                $user->update($userData);
-
-                // تحديث الترجمات
-                foreach ($validated['first_name'] as $locale => $firstName) {
-                    $user->translations()->updateOrCreate(
-                        ['locale' => $locale],
-                        [
-                            'first_name' => $firstName,
-                            'last_name' => $validated['last_name'][$locale] ?? null,
-                            'bio' => $validated['bio'][$locale] ?? null,
-                            'address' => $validated['address'][$locale] ?? null,
-                        ]
-                    );
-                }
-
-                // معالجة الصورة الشخصية
-                if ($request->hasFile('avatar')) {
-                    if ($user->avatar) {
-                        Storage::disk('public')->delete($user->avatar);
-                    }
-                    $path = $request->file('avatar')->store('users/avatars', 'public');
-                    $user->update(['avatar' => $path]);
-                }
-
-                // تحديث الأدوار
-                if ($request->has('roles')) {
-                    $user->roles()->sync($request->roles);
-                }
-
-                // تحديث الإعدادات
-                if ($request->has('settings')) {
-                    $user->settings()->update($request->settings);
-                }
-            });
-
+            $this->userService->updateUser($user, $request->validated());
             return redirect()->route('admin.users.index')
                 ->with('success', __('messages.user_updated_successfully'));
         } catch (\Exception $e) {
+            Log::error("User update failed for ID {$user->id}: " . $e->getMessage());
             return redirect()->back()
                 ->with('error', __('messages.user_update_error'))
                 ->withInput();
         }
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user): RedirectResponse
     {
         if (!auth()->user()->can('delete users')) {
             return redirect()->back()->with('error', __('messages.unauthorized_action'));
         }
 
-        // لا يمكن حذف المستخدم الحالي
         if ($user->id === auth()->id()) {
             return redirect()->back()
                 ->with('error', __('messages.cannot_delete_self'));
         }
 
         try {
-            DB::transaction(function () use ($user) {
-                // حذف الصورة الشخصية
-                if ($user->avatar) {
-                    Storage::disk('public')->delete($user->avatar);
-                }
-
-                // حذف المستخدم (سيتم حذف الترجمات والإعدادات تلقائياً بسبب onDelete('cascade'))
-                $user->delete();
-            });
-
+            $this->userService->deleteUser($user);
             return redirect()->route('admin.users.index')
                 ->with('success', __('messages.user_deleted_successfully'));
         } catch (\Exception $e) {
+            Log::error("User deletion failed for ID {$user->id}: " . $e->getMessage());
             return redirect()->back()
                 ->with('error', __('messages.user_delete_error'));
         }
-    }
-
-    private function getValidationRules($userId = null): array
-    {
-        $rules = [
-            'email' => ['required', 'email', 'max:255', 'unique:users,email' . ($userId ? ",{$userId}" : '')],
-            'username' => ['required', 'string', 'max:255', 'unique:users,username' . ($userId ? ",{$userId}" : '')],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'password' => $userId ? ['nullable', 'confirmed', Password::defaults()] : ['required', 'confirmed', Password::defaults()],
-            'is_active' => 'boolean',
-            'status' => 'nullable|in:active,inactive,blocked',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
-            'settings' => 'nullable|array',
-        ];
-
-        // إضافة قواعد التحقق للحقول المترجمة
-        foreach (Language::active()->get() as $language) {
-            $required = $language->is_required ? 'required' : 'nullable';
-            $rules["first_name.{$language->code}"] = "{$required}|string|max:255";
-            $rules["last_name.{$language->code}"] = "{$required}|string|max:255";
-            $rules["bio.{$language->code}"] = "nullable|string";
-            $rules["address.{$language->code}"] = "nullable|string|max:500";
-        }
-
-        return $rules;
     }
 }

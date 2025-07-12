@@ -7,52 +7,55 @@ use Illuminate\Database\Seeder;
 
 class LanguageSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
         $languages = [
             [
-                'name' => 'العربية',
                 'code' => 'ar',
+                'name' => 'العربية',
                 'direction' => 'rtl',
-                'is_active' => true,
                 'is_default' => true,
-                'is_required' => true,
-                'order' => 1,
+                'is_active' => true
             ],
             [
-                'name' => 'English',
                 'code' => 'en',
+                'name' => 'English',
                 'direction' => 'ltr',
-                'is_active' => true,
                 'is_default' => false,
-                'is_required' => true,
-                'order' => 2,
+                'is_active' => true
             ],
             [
-                'name' => 'Français',
                 'code' => 'fr',
+                'name' => 'Français',
                 'direction' => 'ltr',
-                'is_active' => true,
                 'is_default' => false,
-                'is_required' => false,
-                'order' => 3,
+                'is_active' => true
             ],
             [
-                'name' => 'Español',
                 'code' => 'es',
+                'name' => 'Español',
                 'direction' => 'ltr',
-                'is_active' => true,
                 'is_default' => false,
-                'is_required' => false,
-                'order' => 4,
+                'is_active' => true
             ],
+            [
+                'code' => 'de',
+                'name' => 'Deutsch',
+                'direction' => 'ltr',
+                'is_default' => false,
+                'is_active' => true
+            ],
+            [
+                'code' => 'tr',
+                'name' => 'Türkçe',
+                'direction' => 'ltr',
+                'is_default' => false,
+                'is_active' => true
+            ]
         ];
 
         foreach ($languages as $language) {
-            Language::updateOrCreate(
-                ['code' => $language['code']],
-                $language
-            );
+            Language::create($language);
         }
     }
 }

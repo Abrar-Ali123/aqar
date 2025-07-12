@@ -34,6 +34,14 @@ Route::post('/payments', [PaymentApiController::class, 'create']);
 Route::get('/payments/{id}', [PaymentApiController::class, 'show']);
 // API: إنشاء اشتراك دوري
 Route::post('/subscriptions', [SubscriptionApiController::class, 'create']);
+
+// مسارات التحقق من الحساب
+Route::prefix('account')->name('account.')->group(function () {
+    Route::post('/send-code', [AccountController::class, 'sendCode'])->name('send-code');
+    Route::post('/verify-code', [AccountController::class, 'verifyCode'])->name('verify-code');
+    Route::post('/register', [AccountController::class, 'register'])->name('register');
+});
+
 // API: إلغاء اشتراك دوري
 Route::post('/subscriptions/{id}/cancel', [SubscriptionApiController::class, 'cancel']);
 

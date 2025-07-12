@@ -2,7 +2,16 @@
 
 return [
 
-    'class_namespace' => 'App\\Livewire',
+    'class_namespace' => 'App\Http\Livewire',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Livewire Components
+    |--------------------------------------------------------------------------
+    */
+    'components' => [
+        'account-management' => App\Http\Livewire\AccountManagementComponent::class,
+    ],
 
     'view_path' => resource_path('views/livewire'),
 

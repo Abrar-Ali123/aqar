@@ -2,175 +2,84 @@
 
 namespace App\Livewire;
 
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
-use Livewire\WithFileUploads;
 
 class AccountManagementComponent extends Component
 {
-    protected $firebaseAuth;
+    public $step = 'phone';
+    public $mobile = '';
+    public $name = '';
+    public $message = '';
+    public $verificationCode = '';
 
-    use WithFileUploads;
+    protected $rules = [
+        'mobile' => 'required|regex:/^(05)[0-9]{8}$/',
+        'name' => 'required|min:2',
+        'verificationCode' => 'required|size:6'
+    ];
 
-    public $withConfirmed = false;
+    protected $messages = [
+        'mobile.required' => 'رقم الجوال مطلوب',
+        'mobile.regex' => 'رقم الجوال غير صحيح',
+        'verificationCode.required' => 'رمز التحقق مطلوب',
+        'verificationCode.size' => 'رمز التحقق يجب أن يكون 6 أرقام',
+        'name.required' => 'الاسم مطلوب',
+        'name.min' => 'الاسم يجب أن يكون حرفين على الأقل'
+    ];
 
-    public $countryCode;
-
-    public $selectedRoleId;
-
-    public $primaryRoles;
-
-    public $email;
-
-    public $password;
-
-    public $phone_number;
-
-    public $avatar;
-
-    public $bank_account;
-
-    public $role_id;
-
-    public $facility_id;
-
-    public $bank_id;
-
-    public $latitude;
-
-    public $longitude;
-
-    public $google_maps_url;
-
-    public $primary_role;
-
-    public $facebook;
-
-    public $twitter;
-
-    public $instagram;
-
-    public $linkedin;
-
-    public $snapchat;
-
-    public $tiktok;
-
-    public $pinterest;
-
-    public $youtube;
-
-    public $whatsapp_number;
-
-    public $telegram;
-
-    public $names = [];
-
-    public $addresses = [];
-
-    public $passwordConfirmation;
-
-    public $resetEmail;
-
-    public $resetToken;
-
-    public $verificationCode;
-
-    public $isVerified = false;
-
-    public $step = 0;
-
-    public $withError = false;
-
-    public $registrationType;
-
-    public $translations = [];
-
-    protected $listeners = ['codeConfirm', 'werrorCode'];
-
-    protected function rules()
+    public function mount()
     {
-        $rules = [
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed',
-        ];
+        $this->step = 'phone';
+    }
 
-        foreach ($this->locales as $locale => $label) {
-            $rules["names.$locale"] = 'required|string|max:255';
+    public function sendCode()
+    {
+        try {
+            $this->validate([
+                'mobile' => 'required|regex:/^(05)[0-9]{8}$/'
+            ]);
+
+            $this->message = 'تم إرسال رمز التحقق بنجاح';
+            $this->step = 'verify';
+        } catch (\Exception $e) {
+            $this->message = 'خطأ: ' . $e->getMessage();
         }
+    }
 
-        return $rules;
+    public function verifyCode()
+    {
+        try {
+            $this->validate([
+                'verificationCode' => 'required|size:6'
+            ]);
+
+            if ($this->verificationCode === '123456') {
+                $this->message = 'تم التحقق من الرمز بنجاح';
+                $this->step = 'name';
+            } else {
+                $this->message = 'خطأ: رمز التحقق غير صحيح';
+            }
+        } catch (\Exception $e) {
+            $this->message = 'خطأ: ' . $e->getMessage();
+        }
+    }
+
+    public function register()
+    {
+        try {
+            $this->validate([
+                'name' => 'required|min:2'
+            ]);
+
+            $this->message = 'تم التسجيل بنجاح';
+            $this->step = 'done';
+        } catch (\Exception $e) {
+            $this->message = 'خطأ: ' . $e->getMessage();
+        }
     }
 
     public function render()
     {
-        return view('livewire.account-management-component')
-            ->layout('components.layouts.blank');
-    }
-
-    public function codeConfirm($code)
-    {
-        $this->withConfirmed = $code;
-        $this->isVerified = true;
-    }
-
-    public function werrorCode($code)
-    {
-        $this->withError = $code;
-        $this->isVerified = false;
-    }
-
-    public function login(Request $request)
-    {
-        $idToken = $request->input('idToken');
-        $phoneNumber = $request->input('phone_number');
-
-        $phone_number = "+{$request->countryCode}{$phoneNumber}";
-        $user = User::where('phone_number', $phone_number)->first();
-
-        if ($user) {
-            Auth::login($user);
-            return response()->json(['status' => 'done']);
-        } else {
-            Auth::logout();
-            return response()->json(['status' => 'register', 'redirect' => route('register')]);
-        }
-    }
-
-    public function loginOrRegister(Request $request)
-    {
-        $idToken = $request->input('idToken');
-        $phoneNumber = $request->input('phone_number');
-
-        $phone_number = "+{$request->countryCode}{$phoneNumber}";
-        $user = User::where('phone_number', $phone_number)->first();
-
-        if ($user) {
-            Auth::login($user);
-
-            return response()->json(['status' => 'done']);
-        } else {
-            $user = User::create([
-                'phone_number' => $phone_number,
-                'primary_role' => 'باحث عن عقار',
-
-            ]);
-
-            foreach ($request->names as $locale => $name) {
-                $user->translations()->updateOrCreate(
-                    ['locale' => $locale],
-                    ['name' => $name]
-                );
-            }
-
-            Auth::login($user);
-
-            return response()->json([
-                'status' => 'registered',
-                'message' => 'تم تسجيلك بنجاح. يمكنك الآن إكمال ملفك الشخصي.',
-            ]);
-        }
+        return view('livewire.account-management-component');
     }
 }

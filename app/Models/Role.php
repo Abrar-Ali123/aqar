@@ -80,7 +80,7 @@ class Role extends Model implements TranslatableContract
         'is_primary',
         'is_paid',
         'price',
-        'parent_role_id',
+        'parent_id',
         'level',
     ];
 
@@ -96,7 +96,7 @@ class Role extends Model implements TranslatableContract
      */
     public function parentRole()
     {
-        return $this->belongsTo(Role::class, 'parent_role_id');
+        return $this->belongsTo(Role::class, 'parent_id');
     }
 
     /**
@@ -104,7 +104,7 @@ class Role extends Model implements TranslatableContract
      */
     public function childRoles()
     {
-        return $this->hasMany(Role::class, 'parent_role_id');
+        return $this->hasMany(Role::class, 'parent_id');
     }
 
     /**

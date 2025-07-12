@@ -16,23 +16,6 @@
         this.success = false;
 
         try {
-            const response = await fetch('{{ route('facility.contact', ['facility' => $facility->id]) }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-                },
-                body: JSON.stringify(this.formData)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                this.success = true;
-                this.formData = { name: '', email: '', phone: '', message: '' };
-            } else {
-                this.error = result.message || 'حدث خطأ أثناء إرسال الرسالة';
-            }
         } catch (e) {
             this.error = 'حدث خطأ أثناء إرسال الرسالة';
         } finally {

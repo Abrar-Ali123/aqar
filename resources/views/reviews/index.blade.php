@@ -155,7 +155,7 @@
                         <i class="fas fa-lock fa-3x text-muted mb-3"></i>
                         <h5>سجل دخول للتقييم</h5>
                         <p class="text-muted mb-3">يجب عليك تسجيل الدخول لتتمكن من إضافة تقييم</p>
-                        <a href="{{ route('login') }}" class="btn btn-primary">
+
                             تسجيل الدخول
                         </a>
                     </div>

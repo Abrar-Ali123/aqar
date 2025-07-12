@@ -5,7 +5,7 @@
     <div class="container">
         <!-- فلتر البحث -->
         <div class="search-filters bg-white rounded-3 shadow-sm p-4 mb-4">
-            <form action="{{ route('products.index', ['locale' => app()->getLocale()]) }}" method="GET">
+            <form action="{{ route('products.index', app()->getLocale()) }}" method="GET">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <select name="category" class="form-select">
@@ -145,7 +145,7 @@
                                          width="30">
                                     <span class="small">{{ $property->agent->name }}</span>
                                 </div>
-                                <a href="{{ route('products.show', ['locale' => app()->getLocale(), 'product' => $property->id]) }}" 
+                                <a href="{{ route('products.show', [app()->getLocale(), $property->id]) }}" 
                                    class="btn btn-sm btn-outline-primary">
                                     {{ __('pages.view_details') }}
                                 </a>

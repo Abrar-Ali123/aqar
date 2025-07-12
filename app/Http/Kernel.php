@@ -36,10 +36,9 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\TrackAnalytics::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
-            \App\Http\Middleware\SetLocale::class, // تحديد اللغة
             \App\Http\Middleware\ActivityLog::class, // تسجيل النشاط
+            \App\Http\Middleware\Localize::class, // تعيين اللغة والاتجاه
         ],
 
         'api' => [
@@ -68,12 +67,9 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'role' => \App\Http\Middleware\CheckRole::class,
-        'permission' => \App\Http\Middleware\CheckPermission::class,
-        'active' => \App\Http\Middleware\CheckUserStatus::class,
-        '2fa' => \App\Http\Middleware\Require2FA::class,
-        'admin' => \App\Http\Middleware\IsAdmin::class,
-        'localize' => \App\Http\Middleware\Localize::class,
+        'authorize' => \App\Http\Middleware\AuthorizeUser::class,
+        'locale' => \App\Http\Middleware\Localize::class,
+        'activity' => \App\Http\Middleware\ActivityLog::class
     ];
 
     /**

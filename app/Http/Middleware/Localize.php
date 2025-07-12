@@ -20,61 +20,60 @@ class Localize
     {
         try {
             // Get locale from URL
-            $locale = $request->route('locale');
+            $locale = $request->segment(1);
 
-            // If no locale in URL, use default language
-            if (!$locale) {
-                $defaultLanguage = Language::where('is_default', true)
-                    ->where('is_active', true)
-                    ->first();
+            // Get default language from database
+            $defaultLanguage = Language::where('is_default', true)
+                ->where('is_active', true)
+                ->first();
 
+            // If no locale in URL or accessing root URL
+            if (!$locale || $request->path() === '/') {
                 if ($defaultLanguage) {
-                    return redirect()->to('/' . $defaultLanguage->code);
+                    return redirect()->to('/' . $defaultLanguage->code . ($request->path() === '/' ? '' : '/' . $request->path()));
                 }
-
+                
                 // If no default language, use fallback
                 $fallbackLocale = Config::get('app.fallback_locale', 'en');
-                App::setLocale($fallbackLocale);
-                session()->put('locale', $fallbackLocale);
-                session()->put('direction', 'rtl');
-                return $next($request);
+                return $this->setLocaleAndContinue($fallbackLocale, 'ltr', $request, $next);
             }
 
-            // Get current language
+            // Check if the locale is valid
             $language = Language::where('code', $locale)
                 ->where('is_active', true)
                 ->first();
 
             if ($language) {
-                App::setLocale($locale);
-                session()->put('locale', $locale);
-                session()->put('direction', $language->direction);
-                return $next($request);
+                return $this->setLocaleAndContinue($locale, $language->direction, $request, $next);
             }
 
             // If invalid locale, redirect to default language
-            $defaultLanguage = Language::where('is_default', true)
-                ->where('is_active', true)
-                ->first();
-
             if ($defaultLanguage) {
-                return redirect()->to('/' . $defaultLanguage->code);
+                $path = $request->path();
+                // Remove the invalid locale from the path
+                $path = substr($path, strlen($locale) + 1) ?: '';
+                return redirect()->to('/' . $defaultLanguage->code . ($path ? '/' . $path : ''));
             }
 
             // If no default language, use fallback
             $fallbackLocale = Config::get('app.fallback_locale', 'en');
-            App::setLocale($fallbackLocale);
-            session()->put('locale', $fallbackLocale);
-            session()->put('direction', 'rtl');
-            return $next($request);
+            return $this->setLocaleAndContinue($fallbackLocale, 'ltr', $request, $next);
 
         } catch (\Exception $e) {
             // In case of any error, use fallback locale
             $fallbackLocale = Config::get('app.fallback_locale', 'en');
-            App::setLocale($fallbackLocale);
-            session()->put('locale', $fallbackLocale);
-            session()->put('direction', 'rtl');
-            return $next($request);
+            return $this->setLocaleAndContinue($fallbackLocale, 'ltr', $request, $next);
         }
+    }
+
+    /**
+     * Set locale and continue with the request
+     */
+    private function setLocaleAndContinue(string $locale, string $direction, Request $request, Closure $next)
+    {
+        App::setLocale($locale);
+        session()->put('locale', $locale);
+        session()->put('direction', $direction);
+        return $next($request);
     }
 }

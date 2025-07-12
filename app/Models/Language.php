@@ -25,6 +25,17 @@ class Language extends Model
     ];
 
     /**
+     * Scope a query to only include active languages.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
      * Get current active language
      */
     public static function getCurrentLanguage()

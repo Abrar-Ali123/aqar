@@ -3,47 +3,41 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StorePermissionRequest;
+use App\Http\Requests\Admin\UpdatePermissionRequest;
 use App\Models\Permission;
-use App\Models\PermissionCategory;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use App\Services\PermissionService;
 
 class PermissionController extends Controller
 {
+    protected $permissionService;
+
+    public function __construct(PermissionService $permissionService)
+    {
+        $this->permissionService = $permissionService;
+    }
+
     public function index()
     {
-        $categories = PermissionCategory::with(['permissions', 'children.permissions'])
-            ->whereNull('parent_id')
-            ->orderBy('order')
-            ->get();
-
+        if (!auth()->user()->can('manage permissions')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+        $categories = $this->permissionService->getCategoriesForIndex();
         return view('dashboard.permissions.index', compact('categories'));
     }
 
     public function create()
     {
-        $categories = PermissionCategory::orderBy('name')->get();
+        if (!auth()->user()->can('manage permissions')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+        $categories = $this->permissionService->getAllCategories();
         return view('dashboard.permissions.create', compact('categories'));
     }
 
-    public function store(Request $request)
+    public function store(StorePermissionRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:permission_categories,id',
-            'description' => 'nullable|string',
-            'translations' => 'required|array',
-            'translations.ar' => 'required|string',
-            'translations.en' => 'required|string',
-        ]);
-
-        $permission = Permission::create([
-            'name' => Str::slug($validated['name']),
-            'category_id' => $validated['category_id'],
-            'description' => $validated['description'],
-            'translations' => $validated['translations'],
-            'guard_name' => 'web'
-        ]);
+        $this->permissionService->createPermission($request->validated());
 
         return redirect()
             ->route('admin.permissions.index')
@@ -52,25 +46,16 @@ class PermissionController extends Controller
 
     public function edit(Permission $permission)
     {
-        $categories = PermissionCategory::orderBy('name')->get();
+        if (!auth()->user()->can('manage permissions')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+        $categories = $this->permissionService->getAllCategories();
         return view('dashboard.permissions.edit', compact('permission', 'categories'));
     }
 
-    public function update(Request $request, Permission $permission)
+    public function update(UpdatePermissionRequest $request, Permission $permission)
     {
-        $validated = $request->validate([
-            'category_id' => 'required|exists:permission_categories,id',
-            'description' => 'nullable|string',
-            'translations' => 'required|array',
-            'translations.ar' => 'required|string',
-            'translations.en' => 'required|string',
-        ]);
-
-        $permission->update([
-            'category_id' => $validated['category_id'],
-            'description' => $validated['description'],
-            'translations' => $validated['translations']
-        ]);
+        $this->permissionService->updatePermission($permission, $request->validated());
 
         return redirect()
             ->route('admin.permissions.index')
@@ -79,7 +64,11 @@ class PermissionController extends Controller
 
     public function destroy(Permission $permission)
     {
-        $permission->delete();
+        if (!auth()->user()->can('manage permissions')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+        
+        $this->permissionService->deletePermission($permission);
 
         return redirect()
             ->route('admin.permissions.index')
@@ -88,6 +77,10 @@ class PermissionController extends Controller
 
     public function audit(Permission $permission)
     {
+        if (!auth()->user()->can('manage permissions')) {
+            return redirect()->back()->with('error', __('messages.unauthorized_action'));
+        }
+
         $logs = $permission->auditLogs()
             ->with('user')
             ->latest()

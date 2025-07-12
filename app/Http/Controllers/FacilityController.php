@@ -2,112 +2,97 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreFacilityRequest;
+use App\Http\Requests\UpdateFacilityRequest;
+use App\Models\BusinessCategory;
+use App\Models\BusinessSector;
 use App\Models\Facility;
-use App\Models\Language;
-use App\Models\FacilityType;
-use App\Services\Analytics\AnalyticsManager;
-use App\Services\Marketing\MarketingManager;
-use App\Services\AI\ContentOptimizer;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\File;
+use App\Services\FacilityService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
-use Illuminate\Support\Str;
-use App\Services\ImageService;
-use App\Services\TranslationService;
-use App\Events\FacilityUpdated;
-use App\Jobs\ProcessFacilityImages;
-use App\Notifications\FacilityStatusChanged;
 
 class FacilityController extends Controller
 {
-    protected $analyticsManager;
-    protected $marketingManager;
-    protected $imageService;
-    protected $translationService;
-    protected $contentOptimizer;
-
-    public function __construct(
-        AnalyticsManager $analyticsManager,
-        MarketingManager $marketingManager,
-        ImageService $imageService,
-        TranslationService $translationService,
-        ContentOptimizer $contentOptimizer
-    )
+    public function __construct(protected FacilityService $facilityService)
     {
-        $this->analyticsManager = $analyticsManager;
-        $this->marketingManager = $marketingManager;
-        $this->imageService = $imageService;
-        $this->translationService = $translationService;
-        $this->contentOptimizer = $contentOptimizer;
-        $this->middleware('auth')->except(['index', 'show']);
-        $this->middleware('permission:create facilities')->only(['create', 'store']);
-        $this->middleware('permission:edit facilities')->only(['edit', 'update', 'updateDefaultLocale', 'addLanguage', 'updateLanguagesOrder']);
-        $this->middleware('permission:delete facilities')->only('destroy');
+        // Authorization is now handled by the AuthorizeUser middleware in routes
+        // or within the Form Requests for store/update actions.
     }
 
-    public function show($locale, $id)
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(): View
     {
-        // Use the provided locale if valid, otherwise fallback to app locale
-        $locale = in_array($locale, config('app.supported_locales', ['ar', 'en'])) 
-            ? $locale 
-            : app()->getLocale();
+        $facilities = Auth::user()->facilities()->latest()->paginate(15);
+        return view('dashboard.facilities.index', compact('facilities'));
+    }
 
-        // محاولة العثور على المنشأة باستخدام الـ ID مع التحميل المسبق للعلاقات
-        $facility = Facility::with([
-            'translations' => function($q) use ($locale) {
-                $q->where('locale', $locale);
-            },
-            'products' => function($q) {
-                $q->where('products.is_active', true)
-                  ->select(['products.id', 'products.facility_id', 'products.is_active', 'products.created_at'])
-                  ->with(['images' => function($q) {
-                      $q->select(['id', 'imageable_id', 'imageable_type', 'path', 'order'])
-                        ->orderBy('order');
-                  }]);
-            },
-            'businessSector' => function($q) use ($locale) {
-                $q->with(['translations' => function($q) use ($locale) {
-                    $q->where('locale', $locale);
-                }]);
-            },
-            'businessCategory' => function($q) use ($locale) {
-                $q->with(['translations' => function($q) use ($locale) {
-                    $q->where('locale', $locale);
-                }]);
-            },
-            'images' => function($q) {
-                $q->select(['id', 'facility_id', 'path', 'order'])
-                  ->orderBy('order');
-            },
-            'template' => function($q) {
-                $q->select(['id', 'name', 'slug', 'layout', 'styles', 'ui_components']);
-            },
-            'pages' => function($q) {
-                $q->where('is_active', true);
-            }
-        ])->findOrFail($id);
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create(): View
+    {
+        $businessCategories = BusinessCategory::all();
+        $businessSectors = BusinessSector::all();
 
-        // التحقق من أن المنشأة تدعم اللغة المطلوبة
-        if (!$facility->supportsLocale($locale)) {
-            $locale = $facility->default_locale;
-            app()->setLocale($locale);
-        }
+        return view('dashboard.facilities.create', compact('businessCategories', 'businessSectors'));
+    }
 
-        // تحليل أداء المنشأة
-        $analytics = $this->analyticsManager->analyzeFacilityPerformance($facility);
-        
-        // إنشاء حملة تسويقية
-        $marketingCampaign = $this->marketingManager->createMarketingCampaign($facility);
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreFacilityRequest $request): RedirectResponse
+    {
+        $facility = $this->facilityService->createFacility($request->validated());
 
-        return view('facilities.show', [
-            'facility' => $facility,
-            'locale' => $locale,
-            'analytics' => $analytics,
-            'marketingCampaign' => $marketingCampaign
-        ]);
+        return redirect()->route('facilities.edit', ['locale' => app()->getLocale(), 'facility' => $facility->id])
+                         ->with('success', __('messages.facility_created_successfully'));
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Facility $facility): RedirectResponse
+    {
+        return redirect()->route('facilities.edit', ['locale' => app()->getLocale(), 'facility' => $facility->id]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id): View
+    {
+        $facility = Facility::findOrFail($id);
+        $businessCategories = BusinessCategory::all();
+        $businessSectors = BusinessSector::all();
+
+        return view('dashboard.facilities.edit', compact('facility', 'businessCategories', 'businessSectors'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateFacilityRequest $request, string $id): RedirectResponse
+    {
+        $facility = Facility::findOrFail($id);
+        $this->facilityService->updateFacility($facility, $request->validated());
+
+        return redirect()->route('facilities.index', ['locale' => app()->getLocale()])
+                         ->with('success', __('messages.facility_updated_successfully'));
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Facility $facility): RedirectResponse
+    {
+        // We assume authorization is handled by middleware or a policy check can be added here if needed.
+        $this->facilityService->deleteFacility($facility);
+
+        return redirect()->route('facilities.index', ['locale' => app()->getLocale()])
+                         ->with('success', __('messages.facility_deleted_successfully'));
     }
 }
+

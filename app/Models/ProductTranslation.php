@@ -13,14 +13,8 @@ class ProductTranslation extends Model
 
     public $timestamps = false;
 
-    protected $fillable = [
-        'name',
-        'description',
-        'meta_title',
-        'meta_description',
-        'meta_keywords',
-        'locale',
-    ];
+    protected $fillable = ['name', 'description', 'locale'];
+    protected $table = 'product_translations';
 
     /**
      * Get the product that owns the translation.

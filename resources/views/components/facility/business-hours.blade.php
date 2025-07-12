@@ -25,12 +25,19 @@
             @php
                 $hours = $facility->opening_hours[$dayKey] ?? null;
                 $isOpen = false;
-                
-                        @endif
-                    @else
-                        <span class="text-red-600">مغلق</span>
-                    @endif
-                </div>
+            @endphp
+            <div class="flex items-center justify-between">
+                <span>{{ $dayName }}</span>
+                @if($hours)
+                    @php
+                        $isOpen = true;
+                        $openTime = \Carbon\Carbon::parse($hours['open'])->format('g:i A');
+                        $closeTime = \Carbon\Carbon::parse($hours['close'])->format('g:i A');
+                    @endphp
+                    <span>{{ $openTime }} - {{ $closeTime }}</span>
+                @else
+                    <span>غير مفتوح</span>
+                @endif
             </div>
         @endforeach
     </div>

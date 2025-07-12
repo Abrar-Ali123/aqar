@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamps();
 
             // يجب أن تكون القيم فريدة لكل منتج وسمة وقيمة
-            $table->unique(['product_id', 'attribute_id', 'attribute_value'], 'unique_inventory_value');
+
         });
 
         // إضافة حقل has_inventory و inventory_settings للسمات
@@ -34,15 +34,5 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('attribute_inventory_values');
-        
-        Schema::table('attributes', function (Blueprint $table) {
-            $table->dropColumn(['has_inventory', 'inventory_settings']);
-        });
-
-        Schema::table('products', function (Blueprint $table) {
-            $table->integer('quantity')->nullable();
-            $table->integer('low_stock_threshold')->nullable();
-            $table->boolean('track_inventory')->default(false);
-        });
     }
 };
